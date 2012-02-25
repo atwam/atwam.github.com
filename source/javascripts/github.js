@@ -20,6 +20,18 @@ var github = (function(){
             if (options.skip_forks && data.repositories[i].fork) { continue; }
             repos.push(data.repositories[i]);
           }
+
+          ignores = options.ignore.split(',');
+          only = options.only.split(',');
+
+          if (ignores.length > 0 || only.length > 0)
+          {
+            repos = repos.filter(function(x) {
+              return ignores.indexOf(x.name) == -1 && 
+                (only.length == 0 || only.indexOf(x.name) >= 0);
+            });
+          }
+
           repos.sort(function(a, b) {
             var aDate = new Date(a.pushed_at).valueOf(),
                 bDate = new Date(b.pushed_at).valueOf();
