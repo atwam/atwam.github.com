@@ -13,7 +13,7 @@ So here I went, naively googling for "website spell checker", with either pricey
 where I'd have to copy-paste my text from all my pages. Then, I found [AfterTheDeadline](http://afterthedeadline.com/).
 It looks great, open-source, recently bought by wordpress.com, and they even provide an API.
 
-So, spent my evening doing stuff, and here we are with a new gem : [Merimee](https://rubygems.org/gems/merimee).
+So, spent my evening doing stuff, and here we are with a new gem : [Merimee](https://rubygems.org/gems/merimee) ([github](http://github.com/atwam/merimee/)).
 <!-- more -->
 ## What does it do ?
 
