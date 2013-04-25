@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
+    <url>
+        <loc>
+            http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/
+        </loc>
+        <lastmod>2013-04-26T00:03:25+01:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/
+        </loc>
+        <lastmod>2012-05-12T00:40:58+01:00</lastmod>
+    </url>
+    <url>
+        <loc>http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/</loc>
+        <lastmod>2013-04-26T00:03:21+01:00</lastmod>
+    </url>
+    <url>
+        <loc>http://blog.atwam.com/blog/archives/</loc>
+        <lastmod>2013-04-26T00:03:25+01:00</lastmod>
+    </url>
+    <url>
+        <loc>http://blog.atwam.com/</loc>
+        <lastmod>2013-04-26T00:03:25+01:00</lastmod>
+    </url>
+</urlset>

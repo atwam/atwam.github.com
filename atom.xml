@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Atwam]]></title>
+  <link href="http://blog.atwam.com/atom.xml" rel="self"/>
+  <link href="http://blog.atwam.com/"/>
+  <updated>2013-04-26T00:03:31+01:00</updated>
+  <id>http://blog.atwam.com/</id>
+  <author>
+    <name><![CDATA[Atwam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Building `dep_selector` on mac os x]]></title>
+    <link href="http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/"/>
+    <updated>2013-04-25T23:13:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x</id>
+    <content type="html"><![CDATA[<p>Just a quick post, having finally figured out how to install dep_selector on mac os x.
+The issue is that having xcode installed which configures <code>clang</code> as the default compiler, some native gems break.</p>
+
+<p>It took me some time, but at long least I can now build a native gem using <code>gcc</code> instead of <code>clang</code> on mac os x.
+And you&#8217;ll see it&#8217;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
+
+<!-- more -->
+
+
+<h2>Installing gecode</h2>
+
+<p><code>brew install gecode</code> is supposed to be fine, but it failed for me. The solution was to use llvm :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>brew install gecode --use-llvm
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Install dep_selector</h2>
+
+<p><code>dep_selector</code> uses the standard <code>mkmf</code> to create the makefile that will be used to build the native extension for the gem.
+<code>mkmf</code> in turn uses <code>RbConfig</code>, which is defined in <code>rbconfig.rb</code> deep in your ruby source and was generated when your ruby was built.
+The issue is that this <code>rbconfig</code> hard codes the value of the <code>CC</code> variable that will be used in the <code>Makefile</code>.</p>
+
+<p><code>gem install dep_selector</code> fails with compilation errors by clang.</p>
+
+<ul>
+<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that&#8217;d be ugly.</li>
+<li>Second solution : manually build the extension and let rubygems know that our gem is installed.</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd</span> <span class="nv">$GEM_HOME</span>/gems/dep_selector-0.0.8/ext/dep_gecode
+</span><span class='line'><span class="nv">$ </span><span class="c"># First let&#39;s confirm that this was built with the wrong compiler</span>
+</span><span class='line'><span class="nv">$ </span>grep clang Makefile
+</span><span class='line'><span class="nv">CC</span> <span class="o">=</span> clang
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now let&#8217;s edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="sx">%w{CC CXX}</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">c</span><span class="o">|</span>
+</span><span class='line'>  <span class="no">RbConfig</span><span class="o">::</span><span class="no">MAKEFILE_CONFIG</span><span class="o">[</span><span class="n">c</span><span class="o">]</span> <span class="o">=</span> <span class="no">ENV</span><span class="o">[</span><span class="n">c</span><span class="o">]</span> <span class="k">if</span> <span class="no">ENV</span><span class="o">[</span><span class="n">c</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And let&#8217;s recreate the <code>Makefile</code> and build our extension.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ CC</span><span class="o">=</span>gcc <span class="nv">CXX</span><span class="o">=</span>g++ ruby extconf.rb
+</span><span class='line'><span class="nv">$ </span>grep CC Makefile <span class="c"># Should output gcc, great success !</span>
+</span><span class='line'><span class="nv">$ </span>make
+</span><span class='line'><span class="nv">$ </span>make install <span class="c"># This will copy the library so to a proper ruby directory</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can check that the compilation worked, because there is now a <code>dep_gecode.bundle</code> file.
+Now we need to let the gem system know that our gem is added.
+<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we&#8217;ll have to copy the gemspec. The following should do the trick :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd</span> <span class="nv">$GEM_HOME</span>/gems/dep_selector-0.0.8
+</span><span class='line'><span class="nv">$ </span>gem spec --local ../../cache/dep_selector-0.0.8.gem --ruby &gt; ../../specifications/dep_selector-0.0.8.gemspec
+</span><span class='line'><span class="nv">$ </span>gem list dep_selector
+</span><span class='line'>*** LOCAL GEMS ***
+</span><span class='line'>
+</span><span class='line'>dep_selector <span class="o">(</span>0.0.8<span class="o">)</span>
+</span><span class='line'><span class="nv">$ </span>irb
+</span><span class='line'>&gt;&gt; require <span class="s1">&#39;dep_selector&#39;</span>
+</span><span class='line'><span class="o">=</span>&gt; <span class="nb">true</span>
+</span><span class='line'>&gt;&gt; <span class="nb">exit</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&#8217;s it, now we can move on and work on our chef install.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Multiple persistent stores and seed data with core data]]></title>
+    <link href="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/"/>
+    <updated>2012-05-11T23:20:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data</id>
+    <content type="html"><![CDATA[<p>I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
+
+<h3>The problem</h3>
+
+<p>Your nice and shiny iOS app is supposed to have two data components : <strong>User data</strong> and <strong>Seed data</strong>.
+For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
+and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
+
+<p>So, you start thinking that hey, you&#8217;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
+You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
+
+<p><em>You typically use configurations if you want to store different entities in
+ different stores. A persistent store coordinator can only have one managed
+ object model, so by default each store associated with a given coordinator
+ must contain the same entities. To work around this restriction, you can
+ create a model that contains the union of all the entities you want to use.
+ You then create configurations in the model for each of the subsets of
+ entities that you want to use. You can then use this model when you create a
+ coordinator. When you add stores, you specify the different store attributes
+ by configuration. When you are creating your configurations, though, remember
+ that you cannot create cross-store relationships.</em></p>
+
+<p>Well, that&#8217;s pretty much all the doc you&#8217;ll get from apple.
+There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
+<a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
+but not in a clear enough form for me. So, here&#8217;s how it works&#8230;</p>
+
+<!-- more -->
+
+
+<h3>Models</h3>
+
+<p>We want to have two separate models (because that&#8217;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
+Let&#8217;s create two models in xcode (I&#8217;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
+
+<ul>
+<li>Our <em>UserModel</em> model has one entity <code>Rating</code> with two attributes : <code>postcode</code> (an <code>NSString</code>) and <code>rating</code> (an integer).</li>
+<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&#8217;s say some location and address attributes), and <code>Counties</code> that
+which postcode belongs to which county.</li>
+</ul>
+
+
+<blockquote><p>We assume that we have already generated a &#8216;PostCodes.sqlite&#8217; using normal core data stuff, based on <code>PostCodesModel</code> only. That&#8217;s the seed file we&#8217;ll want to download.</p></blockquote>
+
+<h3>How it&#8217;ll work</h3>
+
+<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&#8217;ll need to merge our two models.
+We&#8217;ll create one configuration in each model, with the entities of this model.
+We&#8217;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
+uses the correct store for the correct entities.</p>
+
+<h3>Adding configurations.</h3>
+
+<p>We add one configuration named <em>UserConf</em> to our <em>UserModel</em> model, and drag &amp; drop all our entities to it.
+We do the same with a <em>PostCodesConf</em> configuration for our postcodes model.</p>
+
+<h3>Creating a merged model</h3>
+
+<p>We change our <code>-(NSManagedObjectModel*)managedObjectModel</code> to the following :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">-</span> <span class="p">(</span><span class="n">NSManagedObjectModel</span> <span class="o">*</span><span class="p">)</span><span class="n">managedObjectModel</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">__managedObjectModel</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">__managedObjectModel</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">uModelURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;UserModel&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;momd&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">NSManagedObjectModel</span><span class="o">*</span> <span class="n">uModel</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSManagedObjectModel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfURL:</span><span class="n">uModelURL</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">pdModelURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;PostCodesModel&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;momd&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">NSManagedObjectModel</span><span class="o">*</span> <span class="n">pdModel</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSManagedObjectModel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfURL:</span><span class="n">pdModelURL</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">__managedObjectModel</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSManagedObjectModel</span> <span class="nl">modelByMergingModels:</span><span class="p">[</span><span class="n">NSArray</span> <span class="nl">arrayWithObjects:</span><span class="n">uModel</span><span class="p">,</span> <span class="n">pdModel</span><span class="p">,</span> <span class="nb">nil</span><span class="p">]];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">__managedObjectModel</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Our new model should now have our three entities, and two configurations : <em>UserConf</em> for our <code>Rating</code> entity, and <em>PostcodesConf</em> for the two others.</p>
+
+<h3>Creating a persistent store</h3>
+
+<p>That&#8217;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
+once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&#8217;t. When you add the first one (our postcodes data),
+it finds that the store (our downloaded sqlite file) wasn&#8217;t created with this model : we only used the <code>PostCodesModel</code> model to create
+our <em>.sqlite</em> file, not our merged model that we are now using.</p>
+
+<p>We could then think of using migration, but then the migrated model used by core data when migrating won&#8217;t have
+our <em>PostCodesConf</em> configuration anymore. <em>I think that&#8217;s a bug of core data</em>.
+The solution is to :</p>
+
+<ol>
+<li>Add the <code>postcodes.sqlite</code> persistent store, <em>without a configuration, but with the auto-migration options</em>. Core data will figure out
+that his sqlite file has just some missing tables (the <em>UserModel</em> tables). This store needs to be writable for the migration to work
+properly.</li>
+<li>Remove our newly created persistent store (he had a default configuration, we want him to use <em>UserConf</em>.</li>
+<li>Add the same persistent store again, which has now the correct metadata and can be used with our merged model.</li>
+<li>The user data sqlite file is usually fine, because it&#8217;s created with the merged model anyway when the app run.
+If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-data-and-plug-ins/">this plugin architecture</a></li>
+</ol>
+
+
+<p>Here is what I end up with :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">-</span> <span class="p">(</span><span class="n">NSPersistentStoreCoordinator</span> <span class="o">*</span><span class="p">)</span><span class="n">persistentStoreCoordinator</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">__persistentStoreCoordinator</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">__persistentStoreCoordinator</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSError</span> <span class="o">*</span><span class="n">error</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>  <span class="n">__persistentStoreCoordinator</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSPersistentStoreCoordinator</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithManagedObjectModel:</span><span class="p">[</span><span class="n">self</span> <span class="n">managedObjectModel</span><span class="p">]];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">[</span><span class="n">self</span> <span class="nl">addSeedDataToCoordinator:</span><span class="n">__persistentStoreCoordinator</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSURL</span><span class="o">*</span> <span class="n">userURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">self</span> <span class="n">applicationDocumentsDirectory</span><span class="p">]</span> <span class="nl">URLByAppendingPathComponent:</span><span class="s">@&quot;UserData.sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="c1">// Note that we use our UserConf here</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">__persistentStoreCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="s">@&quot;UserConf&quot;</span> <span class="nl">URL:</span><span class="n">userURL</span> <span class="nl">options:</span><span class="nb">nil</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Error %@&quot;</span><span class="p">,</span><span class="n">error</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nl">addSeedDataToCoordinator:</span><span class="p">(</span><span class="n">NSPersistentStoreCoordinator</span> <span class="o">*</span><span class="p">)</span><span class="n">storeCoordinator</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// Our destination url, writtable. Make sure this is in Library/Cache if you don&#39;t want iCloud to backup this.</span>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">storeURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">self</span> <span class="n">applicationDocumentsDirectory</span><span class="p">]</span> <span class="nl">URLByAppendingPathComponent:</span><span class="s">@&quot;Postcodes.sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// If we don&#39;t have our migrated store, prepare it</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[[</span><span class="n">NSFileManager</span> <span class="n">defaultManager</span><span class="p">]</span> <span class="nl">fileExistsAtPath:</span><span class="p">[</span><span class="n">storeURL</span> <span class="n">path</span><span class="p">]])</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Our source url should come from a download, but let&#39;s use our bundle for debug purposes in the simulator</span>
+</span><span class='line'>    <span class="n">NSURL</span> <span class="o">*</span><span class="n">baseURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;Postcodes&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[[</span><span class="n">NSFileManager</span> <span class="n">defaultManager</span><span class="p">]</span> <span class="nl">copyItemAtURL:</span><span class="n">baseURL</span> <span class="nl">toURL:</span><span class="n">adURL</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create one coordinator that just migrates, but isn&#39;t used.</span>
+</span><span class='line'>    <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSDictionary</span> <span class="nl">dictionaryWithObjectsAndKeys:</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSMigratePersistentStoresAutomaticallyOption</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSInferMappingModelAutomaticallyOption</span><span class="p">,</span>
+</span><span class='line'>      <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// This will just handle the migration, without any configuration or else ...</span>
+</span><span class='line'>    <span class="n">NSPersistentStore</span><span class="o">*</span> <span class="n">tmpStore</span> <span class="o">=</span> <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="nb">nil</span> <span class="nl">URL:</span><span class="n">storeURL</span> <span class="nl">options:</span><span class="n">options</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// And remove it !</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">removePersistentStore:</span><span class="n">tmpStore</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// And now add the coordinator with the correct &#39;PostCodesConf&#39; configuration, in readonly mode</span>
+</span><span class='line'>  <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSDictionary</span> <span class="nl">dictionaryWithObjectsAndKeys:</span><span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSReadOnlyPersistentStoreOption</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="s">@&quot;PostCodesConf&quot;</span> <span class="nl">URL:</span><span class="n">storeURL</span> <span class="nl">options:</span><span class="n">options</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Conclusion</h3>
+
+<p>Well, adding a bit more information, or a sample somewhere could have been helpful, apple.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Spell checking should be part of your view tests]]></title>
+    <link href="http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/"/>
+    <updated>2012-02-25T21:16:00+00:00</updated>
+    <id>http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests</id>
+    <content type="html"><![CDATA[<p>So it all started when I asked a friend to test this new app I&#8217;m building :
+&#8220;On your main page, <em>garantee</em>. You should really check your spelling, people will know you are French !&#8221;.</p>
+
+<p>So here I went, naively googling for &#8220;website spell checker&#8221;, with either pricey reports or simple websites
+where I&#8217;d have to copy-paste my text from all my pages. Then, I found <a href="http://afterthedeadline.com/">AfterTheDeadline</a>.
+It looks great, open-source, recently bought by wordpress.com, and they even provide an API.</p>
+
+<p>So, spent my evening doing stuff, and here we are with a new gem : <a href="https://rubygems.org/gems/merimee">Merimee</a> (<a href="http://github.com/atwam/merimee/">github</a>).</p>
+
+<!-- more -->
+
+
+<h2>What does it do ?</h2>
+
+<p>It gives you some rspec macros to test your views spelling, and fails your tests if it finds errors.</p>
+
+<h2>Install</h2>
+
+<p>So here we are with our existing rails project. Installation is very easy :</p>
+
+<figure class='code'><figcaption><span>Gemfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># :require =&gt; false is mandatory, or the gem may not hook properly into rspec</span>
+</span><span class='line'><span class="n">gem</span> <span class="s1">&#39;merimee&#39;</span><span class="p">,</span> <span class="ss">:group</span> <span class="o">=&gt;</span> <span class="ss">:test</span><span class="p">,</span> <span class="ss">:require</span> <span class="o">=&gt;</span> <span class="kp">false</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec_helper.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Spork</span><span class="o">.</span><span class="n">prefork</span> <span class="k">do</span>
+</span><span class='line'>  <span class="c1">#...</span>
+</span><span class='line'>  <span class="nb">require</span> <span class="s1">&#39;merimee&#39;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec/views/splash/index.html_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">describe</span> <span class="s2">&quot;splash/index&quot;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">it_should_have_a_correct_spelling</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And voilà, your test should still be green, or fail if there&#8217;s a spelling error :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='rbcon'><span class='line'><span class="go">Failures:</span>
+</span><span class='line'>
+</span><span class='line'><span class="go">  1) splash/index should have a correct spelling</span>
+</span><span class='line'><span class="go">     Failure/Error: rendered.should have_a_correct_spelling</span>
+</span><span class='line'><span class="go">      [error : spelling - Spelling] garantee (suggested: guarantee)</span>
+</span><span class='line'><span class="go">      [error : spelling - Spelling] faq (suggested: far, fat, fan, fax, fad)</span>
+</span><span class='line'><span class="go">     # /Users/wam/Dev/merimee/lib/merimee/rspec/view_checker_helper.rb:27:in `block in it_should_have_a_correct_spelling&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="go">Finished in 1.84 seconds</span>
+</span><span class='line'><span class="go">1 example, 1 failure</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Have a look at the <a href="https://github.com/atwam/merimee">readme</a> to see how you can configure the gem :
+you can choose which errors make your test fail, and configure your own dictionary to ignore some
+spelling errors.</p>
+
+<h2>Warning</h2>
+
+<p>Since AtD server will reject your requests if they are too close from each other, the macro has a nasty <code>sleep 0.7</code> to make
+sure it doesn&#8217;t happen. If you find a better solution, send me a pull request. You may want to have these tests only run
+in some test groups.</p>
+
+<h2>Planned features ?</h2>
+
+<p>Oh, I have a few ideas : add a rake task with a full report, for all views, including both errors (spelling etc.) and warnings (grammar warnings
+generated by AtD, like repetitions, double negations etc.
+I want to enable merimee in Test::Case as well, but I&#8217;m not so used to it.</p>
+
+<p>Feel free to fork and send me your pull requests, or just point any issue you have.</p>
+]]></content>
+  </entry>
+  
+</feed>

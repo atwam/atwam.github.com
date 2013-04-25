@@ -1,0 +1,510 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Multiple persistent stores and seed data with core data - Atwam</title>
+  <meta name="author" content="Atwam">
+
+  
+  <meta name="description" content="I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Atwam" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-29496128-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Atwam</a></h1>
+  
+    <h2>I do stuff, and write about it</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.atwam.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Multiple persistent stores and seed data with core data</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true">May 11<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
+
+<h3>The problem</h3>
+
+<p>Your nice and shiny iOS app is supposed to have two data components : <strong>User data</strong> and <strong>Seed data</strong>.
+For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
+and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
+
+<p>So, you start thinking that hey, you&#8217;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
+You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
+
+<p><em>You typically use configurations if you want to store different entities in
+ different stores. A persistent store coordinator can only have one managed
+ object model, so by default each store associated with a given coordinator
+ must contain the same entities. To work around this restriction, you can
+ create a model that contains the union of all the entities you want to use.
+ You then create configurations in the model for each of the subsets of
+ entities that you want to use. You can then use this model when you create a
+ coordinator. When you add stores, you specify the different store attributes
+ by configuration. When you are creating your configurations, though, remember
+ that you cannot create cross-store relationships.</em></p>
+
+<p>Well, that&#8217;s pretty much all the doc you&#8217;ll get from apple.
+There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
+<a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
+but not in a clear enough form for me. So, here&#8217;s how it works&#8230;</p>
+
+<!-- more -->
+
+
+<h3>Models</h3>
+
+<p>We want to have two separate models (because that&#8217;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
+Let&#8217;s create two models in xcode (I&#8217;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
+
+<ul>
+<li>Our <em>UserModel</em> model has one entity <code>Rating</code> with two attributes : <code>postcode</code> (an <code>NSString</code>) and <code>rating</code> (an integer).</li>
+<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&#8217;s say some location and address attributes), and <code>Counties</code> that
+which postcode belongs to which county.</li>
+</ul>
+
+
+<blockquote><p>We assume that we have already generated a &#8216;PostCodes.sqlite&#8217; using normal core data stuff, based on <code>PostCodesModel</code> only. That&#8217;s the seed file we&#8217;ll want to download.</p></blockquote>
+
+<h3>How it&#8217;ll work</h3>
+
+<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&#8217;ll need to merge our two models.
+We&#8217;ll create one configuration in each model, with the entities of this model.
+We&#8217;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
+uses the correct store for the correct entities.</p>
+
+<h3>Adding configurations.</h3>
+
+<p>We add one configuration named <em>UserConf</em> to our <em>UserModel</em> model, and drag &amp; drop all our entities to it.
+We do the same with a <em>PostCodesConf</em> configuration for our postcodes model.</p>
+
+<h3>Creating a merged model</h3>
+
+<p>We change our <code>-(NSManagedObjectModel*)managedObjectModel</code> to the following :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">-</span> <span class="p">(</span><span class="n">NSManagedObjectModel</span> <span class="o">*</span><span class="p">)</span><span class="n">managedObjectModel</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">__managedObjectModel</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">__managedObjectModel</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">uModelURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;UserModel&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;momd&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">NSManagedObjectModel</span><span class="o">*</span> <span class="n">uModel</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSManagedObjectModel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfURL:</span><span class="n">uModelURL</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">pdModelURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;PostCodesModel&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;momd&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">NSManagedObjectModel</span><span class="o">*</span> <span class="n">pdModel</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSManagedObjectModel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfURL:</span><span class="n">pdModelURL</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">__managedObjectModel</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSManagedObjectModel</span> <span class="nl">modelByMergingModels:</span><span class="p">[</span><span class="n">NSArray</span> <span class="nl">arrayWithObjects:</span><span class="n">uModel</span><span class="p">,</span> <span class="n">pdModel</span><span class="p">,</span> <span class="nb">nil</span><span class="p">]];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">__managedObjectModel</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Our new model should now have our three entities, and two configurations : <em>UserConf</em> for our <code>Rating</code> entity, and <em>PostcodesConf</em> for the two others.</p>
+
+<h3>Creating a persistent store</h3>
+
+<p>That&#8217;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
+once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&#8217;t. When you add the first one (our postcodes data),
+it finds that the store (our downloaded sqlite file) wasn&#8217;t created with this model : we only used the <code>PostCodesModel</code> model to create
+our <em>.sqlite</em> file, not our merged model that we are now using.</p>
+
+<p>We could then think of using migration, but then the migrated model used by core data when migrating won&#8217;t have
+our <em>PostCodesConf</em> configuration anymore. <em>I think that&#8217;s a bug of core data</em>.
+The solution is to :</p>
+
+<ol>
+<li>Add the <code>postcodes.sqlite</code> persistent store, <em>without a configuration, but with the auto-migration options</em>. Core data will figure out
+that his sqlite file has just some missing tables (the <em>UserModel</em> tables). This store needs to be writable for the migration to work
+properly.</li>
+<li>Remove our newly created persistent store (he had a default configuration, we want him to use <em>UserConf</em>.</li>
+<li>Add the same persistent store again, which has now the correct metadata and can be used with our merged model.</li>
+<li>The user data sqlite file is usually fine, because it&#8217;s created with the merged model anyway when the app run.
+If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-data-and-plug-ins/">this plugin architecture</a></li>
+</ol>
+
+
+<p>Here is what I end up with :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">-</span> <span class="p">(</span><span class="n">NSPersistentStoreCoordinator</span> <span class="o">*</span><span class="p">)</span><span class="n">persistentStoreCoordinator</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">__persistentStoreCoordinator</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">__persistentStoreCoordinator</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSError</span> <span class="o">*</span><span class="n">error</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>  <span class="n">__persistentStoreCoordinator</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSPersistentStoreCoordinator</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithManagedObjectModel:</span><span class="p">[</span><span class="n">self</span> <span class="n">managedObjectModel</span><span class="p">]];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">[</span><span class="n">self</span> <span class="nl">addSeedDataToCoordinator:</span><span class="n">__persistentStoreCoordinator</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">NSURL</span><span class="o">*</span> <span class="n">userURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">self</span> <span class="n">applicationDocumentsDirectory</span><span class="p">]</span> <span class="nl">URLByAppendingPathComponent:</span><span class="s">@&quot;UserData.sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>  <span class="c1">// Note that we use our UserConf here</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">__persistentStoreCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="s">@&quot;UserConf&quot;</span> <span class="nl">URL:</span><span class="n">userURL</span> <span class="nl">options:</span><span class="nb">nil</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Error %@&quot;</span><span class="p">,</span><span class="n">error</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nl">addSeedDataToCoordinator:</span><span class="p">(</span><span class="n">NSPersistentStoreCoordinator</span> <span class="o">*</span><span class="p">)</span><span class="n">storeCoordinator</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// Our destination url, writtable. Make sure this is in Library/Cache if you don&#39;t want iCloud to backup this.</span>
+</span><span class='line'>  <span class="n">NSURL</span> <span class="o">*</span><span class="n">storeURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">self</span> <span class="n">applicationDocumentsDirectory</span><span class="p">]</span> <span class="nl">URLByAppendingPathComponent:</span><span class="s">@&quot;Postcodes.sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// If we don&#39;t have our migrated store, prepare it</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[[</span><span class="n">NSFileManager</span> <span class="n">defaultManager</span><span class="p">]</span> <span class="nl">fileExistsAtPath:</span><span class="p">[</span><span class="n">storeURL</span> <span class="n">path</span><span class="p">]])</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Our source url should come from a download, but let&#39;s use our bundle for debug purposes in the simulator</span>
+</span><span class='line'>    <span class="n">NSURL</span> <span class="o">*</span><span class="n">baseURL</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">URLForResource:</span><span class="s">@&quot;Postcodes&quot;</span> <span class="nl">withExtension:</span><span class="s">@&quot;sqlite&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[[</span><span class="n">NSFileManager</span> <span class="n">defaultManager</span><span class="p">]</span> <span class="nl">copyItemAtURL:</span><span class="n">baseURL</span> <span class="nl">toURL:</span><span class="n">adURL</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create one coordinator that just migrates, but isn&#39;t used.</span>
+</span><span class='line'>    <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSDictionary</span> <span class="nl">dictionaryWithObjectsAndKeys:</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSMigratePersistentStoresAutomaticallyOption</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSInferMappingModelAutomaticallyOption</span><span class="p">,</span>
+</span><span class='line'>      <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// This will just handle the migration, without any configuration or else ...</span>
+</span><span class='line'>    <span class="n">NSPersistentStore</span><span class="o">*</span> <span class="n">tmpStore</span> <span class="o">=</span> <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="nb">nil</span> <span class="nl">URL:</span><span class="n">storeURL</span> <span class="nl">options:</span><span class="n">options</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// And remove it !</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">removePersistentStore:</span><span class="n">tmpStore</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// And now add the coordinator with the correct &#39;PostCodesConf&#39; configuration, in readonly mode</span>
+</span><span class='line'>  <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSDictionary</span> <span class="nl">dictionaryWithObjectsAndKeys:</span><span class="p">[</span><span class="n">NSNumber</span> <span class="nl">numberWithBool:</span><span class="n">YES</span><span class="p">],</span> <span class="n">NSReadOnlyPersistentStoreOption</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">storeCoordinator</span> <span class="nl">addPersistentStoreWithType:</span><span class="n">NSSQLiteStoreType</span> <span class="nl">configuration:</span><span class="s">@&quot;PostCodesConf&quot;</span> <span class="nl">URL:</span><span class="n">storeURL</span> <span class="nl">options:</span><span class="n">options</span> <span class="nl">error:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Conclusion</h3>
+
+<p>Well, adding a bit more information, or a sample somewhere could have been helpful, apple.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Atwam</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true">May 11<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/core-data/'>core-data</a>, <a class='category' href='/blog/categories/ios/'>ios</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/" data-via="at_wam" data-counturl="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/" title="Previous Post: Spell checking should be part of your view tests">&laquo; Spell checking should be part of your view tests</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/" title="Next Post: Building `dep_selector` on mac os x">Building `dep_selector` on mac os x &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Building `dep_selector` on mac os x</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Multiple persistent stores and seed data with core data</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/">Spell checking should be part of your view tests</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/atwam">@atwam</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'atwam',
+            count: 0,
+            skip_forks: true,
+            ignore: '',
+            only: 'merimee,money-historical-bank',
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Latest Tweets</h1>
+  <ul id="tweets">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("at_wam", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/at_wam" class="twitter-follow-button" data-show-count="false">Follow @at_wam</a>
+  
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Atwam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'atwamblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/';
+        var disqus_url = 'http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

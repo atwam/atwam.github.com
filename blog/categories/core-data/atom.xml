@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: core-data | Atwam]]></title>
+  <link href="http://blog.atwam.com/blog/categories/core-data/atom.xml" rel="self"/>
+  <link href="http://blog.atwam.com/"/>
+  <updated>2013-04-26T00:03:31+01:00</updated>
+  <id>http://blog.atwam.com/</id>
+  <author>
+    <name><![CDATA[Atwam]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Multiple persistent stores and seed data with core data]]></title>
+    <link href="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/"/>
+    <updated>2012-05-11T23:20:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data</id>
+    <content type="html"><![CDATA[<p>I haven't posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
+
+<h3>The problem</h3>
+
+<p>Your nice and shiny iOS app is supposed to have two data components : <strong>User data</strong> and <strong>Seed data</strong>.
+For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
+and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
+
+<p>So, you start thinking that hey, you'll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
+You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
+
+<p><em>You typically use configurations if you want to store different entities in
+ different stores. A persistent store coordinator can only have one managed
+ object model, so by default each store associated with a given coordinator
+ must contain the same entities. To work around this restriction, you can
+ create a model that contains the union of all the entities you want to use.
+ You then create configurations in the model for each of the subsets of
+ entities that you want to use. You can then use this model when you create a
+ coordinator. When you add stores, you specify the different store attributes
+ by configuration. When you are creating your configurations, though, remember
+ that you cannot create cross-store relationships.</em></p>
+
+<p>Well, that's pretty much all the doc you'll get from apple.
+There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
+<a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
+but not in a clear enough form for me. So, here's how it works...</p>
+
+<!-- more -->
+
+
+<h3>Models</h3>
+
+<p>We want to have two separate models (because that's the way it is, or because your seed data can be used in apps that have nothing to do with this one).
+Let's create two models in xcode (I'll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
+
+<ul>
+<li>Our <em>UserModel</em> model has one entity <code>Rating</code> with two attributes : <code>postcode</code> (an <code>NSString</code>) and <code>rating</code> (an integer).</li>
+<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let's say some location and address attributes), and <code>Counties</code> that
+which postcode belongs to which county.</li>
+</ul>
+
+
+<blockquote><p>We assume that we have already generated a 'PostCodes.sqlite' using normal core data stuff, based on <code>PostCodesModel</code> only. That's the seed file we'll want to download.</p></blockquote>
+
+<h3>How it'll work</h3>
+
+<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we'll need to merge our two models.
+We'll create one configuration in each model, with the entities of this model.
+We'll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
+uses the correct store for the correct entities.</p>
+
+<h3>Adding configurations.</h3>
+
+<p>We add one configuration named <em>UserConf</em> to our <em>UserModel</em> model, and drag &amp; drop all our entities to it.
+We do the same with a <em>PostCodesConf</em> configuration for our postcodes model.</p>
+
+<h3>Creating a merged model</h3>
+
+<p>We change our <code>-(NSManagedObjectModel*)managedObjectModel</code> to the following :</p>
+
+<p>``` objc
+- (NSManagedObjectModel *)managedObjectModel
+{
+  if (__managedObjectModel != nil) {</p>
+
+<pre><code>return __managedObjectModel;
+</code></pre>
+
+<p>  }
+  NSURL <em>uModelURL = [[NSBundle mainBundle] URLForResource:@"UserModel" withExtension:@"momd"];
+  NSManagedObjectModel</em> uModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:uModelURL];</p>
+
+<p>  NSURL <em>pdModelURL = [[NSBundle mainBundle] URLForResource:@"PostCodesModel" withExtension:@"momd"];
+  NSManagedObjectModel</em> pdModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:pdModelURL];</p>
+
+<p>  __managedObjectModel = [NSManagedObjectModel modelByMergingModels:[NSArray arrayWithObjects:uModel, pdModel, nil]];</p>
+
+<p>  return __managedObjectModel;
+}
+```</p>
+
+<p>Our new model should now have our three entities, and two configurations : <em>UserConf</em> for our <code>Rating</code> entity, and <em>PostcodesConf</em> for the two others.</p>
+
+<h3>Creating a persistent store</h3>
+
+<p>That's where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
+once per <em>.sqlite</em> file with the correct configuration would be enough. It isn't. When you add the first one (our postcodes data),
+it finds that the store (our downloaded sqlite file) wasn't created with this model : we only used the <code>PostCodesModel</code> model to create
+our <em>.sqlite</em> file, not our merged model that we are now using.</p>
+
+<p>We could then think of using migration, but then the migrated model used by core data when migrating won't have
+our <em>PostCodesConf</em> configuration anymore. <em>I think that's a bug of core data</em>.
+The solution is to :</p>
+
+<ol>
+<li>Add the <code>postcodes.sqlite</code> persistent store, <em>without a configuration, but with the auto-migration options</em>. Core data will figure out
+that his sqlite file has just some missing tables (the <em>UserModel</em> tables). This store needs to be writable for the migration to work
+properly.</li>
+<li>Remove our newly created persistent store (he had a default configuration, we want him to use <em>UserConf</em>.</li>
+<li>Add the same persistent store again, which has now the correct metadata and can be used with our merged model.</li>
+<li>The user data sqlite file is usually fine, because it's created with the merged model anyway when the app run.
+If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-data-and-plug-ins/">this plugin architecture</a></li>
+</ol>
+
+
+<p>Here is what I end up with :</p>
+
+<p>``` objc
+- (NSPersistentStoreCoordinator *)persistentStoreCoordinator
+{
+  if (__persistentStoreCoordinator != nil) {</p>
+
+<pre><code>return __persistentStoreCoordinator;
+</code></pre>
+
+<p>  }</p>
+
+<p>  NSError *error = nil;
+  __persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];</p>
+
+<p>  [self addSeedDataToCoordinator:__persistentStoreCoordinator];</p>
+
+<p>  NSURL* userURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"UserData.sqlite"];
+  // Note that we use our UserConf here
+  if (![__persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:@"UserConf" URL:userURL options:nil error:&amp;error])
+  {</p>
+
+<pre><code>NSLog(@"Error %@",error);
+</code></pre>
+
+<p>  }
+}</p>
+
+<ul>
+<li><p>(void) addSeedDataToCoordinator:(NSPersistentStoreCoordinator <em>)storeCoordinator
+{
+// Our destination url, writtable. Make sure this is in Library/Cache if you don't want iCloud to backup this.
+NSURL </em>storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Postcodes.sqlite"];</p>
+
+<p>// If we don't have our migrated store, prepare it
+if (![[NSFileManager defaultManager] fileExistsAtPath:[storeURL path]])
+{
+  // Our source url should come from a download, but let's use our bundle for debug purposes in the simulator
+  NSURL *baseURL = [[NSBundle mainBundle] URLForResource:@"Postcodes" withExtension:@"sqlite"];
+  [[NSFileManager defaultManager] copyItemAtURL:baseURL toURL:adURL error:&amp;error];</p>
+
+<p>  // Create one coordinator that just migrates, but isn't used.
+  NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:</p>
+
+<pre><code>[NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
+[NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
+nil];
+</code></pre>
+
+<p>  // This will just handle the migration, without any configuration or else ...
+  NSPersistentStore* tmpStore = [storeCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&amp;error];
+  // And remove it !
+  [storeCoordinator removePersistentStore:tmpStore error:&amp;error];
+}</p>
+
+<p>// And now add the coordinator with the correct 'PostCodesConf' configuration, in readonly mode
+NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:YES], NSReadOnlyPersistentStoreOption, nil];
+[storeCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:@"PostCodesConf" URL:storeURL options:options error:&amp;error];
+}
+```</p></li>
+</ul>
+
+
+<h3>Conclusion</h3>
+
+<p>Well, adding a bit more information, or a sample somewhere could have been helpful, apple.</p>
+]]></content>
+  </entry>
+  
+</feed>
