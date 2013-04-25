@@ -29,7 +29,7 @@ _You typically use configurations if you want to store different entities in
  that you cannot create cross-store relationships._
 
 Well, that's pretty much all the doc you'll get from apple.
-There are a few mentions of this problem [there](http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores),
+There are a few mentions of this problem [there](http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores)
 [or there](http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes)
 but not in a clear enough form for me. So, here's how it works...
 
