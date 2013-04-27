@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Building `dep_selector` on mac os x"
+title: "Building dep_selector on mac os x"
 date: 2013-04-25 23:13
 comments: true
 categories: [ruby, gem, chef]
