@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-04-28T00:03:40+01:00</updated>
+  <updated>2013-05-14T21:23:56+01:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -12,6 +12,233 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Using Rspec with inherited_resources helpers and inherited views]]></title>
+    <link href="http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/"/>
+    <updated>2013-05-14T19:51:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views</id>
+    <content type="html"><![CDATA[<p>I have updated a rails app I have been working on recently to a more recent version of rails 3.2, and all my tests where failing.
+Finally managed to have that working, figured I&#8217;d show how.</p>
+
+<h3>Mocking inherited_resources helpers in views specs.</h3>
+
+<p>I know I shouldn&#8217;t be using <a href="https://github.com/josevalim/inherited_resources"><code>inherited_resources</code></a> anymore (<a href="http://stackoverflow.com/questions/9599201/inherited-resources-deperecated-on-rails-3-responders">see here</a> and <a href="http://archives.ryandaigle.com/articles/2009/8/10/what-s-new-in-edge-rails-default-restful-rendering">here</a>) but I want to release my app before I change everything to use responders.</p>
+
+<p>So, my tests where failing because I was using the <code>resource</code>, <code>collection</code> and <code>resource_class</code> helpers from some views I was using. So first my tests are failing because <code>resource_class</code> isn&#8217;t available in my views. I would have thought that the controller helpers were available in the views, but they aren&#8217;t.
+The solution is easy. Let&#8217;s add the following to our <code>spec/support</code> directory :</p>
+
+<figure class='code'><figcaption><span>spec/support/view_resource_macros.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">module</span> <span class="nn">ViewResourceMacros</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">has_resource</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">before</span> <span class="k">do</span>
+</span><span class='line'>      <span class="c1"># Creates the resource</span>
+</span><span class='line'>      <span class="vi">@resource</span> <span class="o">||=</span> <span class="k">yield</span>
+</span><span class='line'>      <span class="c1"># Assign to the symbol we wanted, so it&#39;s available in the view</span>
+</span><span class='line'>      <span class="n">assign</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="vi">@resource</span><span class="p">)</span>
+</span><span class='line'>      <span class="c1"># Assigns to @name so that we can use that in our assertions</span>
+</span><span class='line'>      <span class="nb">instance_variable_set</span><span class="p">(</span><span class="s2">&quot;@</span><span class="si">#{</span><span class="nb">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="vi">@resource</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1"># If we pass an array, it&#39;s for stubing a collection, if not it&#39;s for stubbing a single object</span>
+</span><span class='line'>      <span class="k">if</span> <span class="vi">@resource</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="nb">Array</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">view</span><span class="o">.</span><span class="n">stub</span><span class="p">(</span><span class="ss">:collection</span><span class="p">)</span> <span class="p">{</span> <span class="vi">@resource</span> <span class="p">}</span>
+</span><span class='line'>        <span class="n">view</span><span class="o">.</span><span class="n">stub</span><span class="p">(</span><span class="ss">:resource_class</span><span class="p">)</span> <span class="p">{</span><span class="vi">@resource</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">class</span><span class="p">}</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">view</span><span class="o">.</span><span class="n">stub</span><span class="p">(</span><span class="ss">:resource</span><span class="p">)</span> <span class="p">{</span><span class="vi">@resource</span><span class="p">}</span>
+</span><span class='line'>        <span class="n">view</span><span class="o">.</span><span class="n">stub</span><span class="p">(</span><span class="ss">:resource_class</span><span class="p">)</span> <span class="p">{</span><span class="vi">@resource</span><span class="o">.</span><span class="n">class</span><span class="p">}</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="no">RSpec</span><span class="o">.</span><span class="n">configure</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">extend</span> <span class="no">ViewResourceMacros</span><span class="p">,</span> <span class="ss">:type</span> <span class="o">=&gt;</span> <span class="ss">:view</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And see how to transform our old (failing) test :</p>
+
+<figure class='code'><figcaption><span>spec/views/cars/edit.html.haml_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;spec_helper&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="s2">&quot;cars/edit.html.haml&quot;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">before</span><span class="p">(</span><span class="ss">:each</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">assign</span><span class="p">(</span><span class="ss">:car</span><span class="p">,</span> <span class="vi">@car</span> <span class="o">=</span> <span class="no">Factory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">:car</span><span class="p">))</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">it</span> <span class="s2">&quot;renders the edit view&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">render</span>
+</span><span class='line'>    <span class="n">rendered</span><span class="o">.</span><span class="n">should</span> <span class="n">contain</span><span class="p">(</span><span class="vi">@car</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>becomes :</p>
+
+<figure class='code'><figcaption><span>spec/views/cars/edit.html.haml_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;spec_helper&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="s2">&quot;cars/edit.html.haml&quot;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">has_resource</span><span class="p">(</span><span class="ss">:car</span><span class="p">)</span> <span class="p">{</span> <span class="no">Factory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">:car</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">it</span> <span class="s2">&quot;renders the edit view&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">render</span>
+</span><span class='line'>    <span class="n">rendered</span><span class="o">.</span><span class="n">should</span> <span class="n">contain</span><span class="p">(</span><span class="vi">@car</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Using shared inherited partial in our views specs</h3>
+
+<p>Rails 3.1+ offers views inheritance, so I changed my code to have the following :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">BaseController</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">CarsController</span> <span class="o">&lt;</span> <span class="no">BaseController</span>
+</span><span class='line'>  <span class="n">inherit_resources</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">PlanesController</span> <span class="o">&lt;</span> <span class="no">BaseController</span>
+</span><span class='line'>  <span class="n">inherit_resources</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then I just created a <code>base/new.html.haml</code> and a <code>base/edit.html.haml</code> views, to use the views inheritance.</p>
+
+<figure class='code'><figcaption><span>base/new.html.haml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='haml'><span class='line'><span class="nt">%h1</span> Create <span class="si">#{</span><span class="n">resource_class</span><span class="o">.</span><span class="n">model_name</span><span class="o">.</span><span class="n">human</span><span class="si">}</span>
+</span><span class='line'><span class="p">=</span> <span class="n">render</span> <span class="ss">:partial</span> <span class="o">=&gt;</span> <span class="s2">&quot;form&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span>base/edit.html.haml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='haml'><span class='line'><span class="nt">%h1</span> Edit <span class="si">#{</span><span class="n">resource</span><span class="si">}</span>
+</span><span class='line'><span class="p">=</span> <span class="n">render</span> <span class="ss">:partial</span> <span class="o">=&gt;</span> <span class="s2">&quot;form&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And I have two <code>_form.html.haml</code> partials, one for each controller.
+Now the next issue is that our edit and new views are shared, but we still want to test the <code>_form.html.haml</code> partial.</p>
+
+<figure class='code'><figcaption><span>spec/views/cars/_form.html.haml_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="err">&#39;</span><span class="n">spec_helper</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="s2">&quot;cars/_form.html.haml&quot;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="kp">new</span><span class="p">:</span> <span class="o">-&gt;</span> <span class="p">{</span> <span class="no">Car</span><span class="o">.</span><span class="n">new</span> <span class="p">}</span>
+</span><span class='line'>    <span class="n">edit</span><span class="p">:</span> <span class="o">-&gt;</span> <span class="p">{</span> <span class="no">Factory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">:car</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="nb">name</span><span class="p">,</span> <span class="n">block</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">context</span> <span class="s2">&quot;when called in #</span><span class="si">#{</span><span class="nb">name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">has_resource</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">it</span> <span class="s2">&quot;renders the form&quot;</span> <span class="k">do</span>
+</span><span class='line'>        <span class="n">render</span>
+</span><span class='line'>        <span class="n">rendered</span><span class="o">.</span><span class="n">should</span> <span class="n">have_selector</span><span class="p">(</span><span class="s2">&quot;form&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Shared partial</h3>
+
+<p>Finally, when testing for example <code>cars/index.html.haml</code> which uses a partial <code>toolbar.html.haml</code> that actually exists in <code>base</code> views, the following lines are necessary :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">before</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">views</span><span class="o">.</span><span class="n">lookup_context</span><span class="o">.</span><span class="n">prefixes</span> <span class="o">&lt;&lt;</span> <span class="s2">&quot;base&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This was <a href="https://github.com/rails/rails/issues/5213">raised as an issue to the rails team</a>, but they commented (rightly I think) that the inheritance
+is related to the controller, not the views, so the test case shouldn&#8217;t know about it and you&#8217;ll have to declare it manually using the lines above.</p>
+
+<p>Now let&#8217;s go back and make these tests green again.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[From pow to a deployed rails app using chef, capistrano and vagrant - Part 1]]></title>

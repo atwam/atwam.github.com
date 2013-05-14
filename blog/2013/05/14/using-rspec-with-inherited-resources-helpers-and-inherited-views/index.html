@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Atwam</title>
+  <title>Using Rspec with inherited_resources helpers and inherited views - Atwam</title>
   <meta name="author" content="Atwam">
 
   
@@ -19,7 +19,7 @@ Finally managed to &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://blog.atwam.com">
+  <link rel="canonical" href="http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -75,15 +75,12 @@ Finally managed to &hellip;">
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/">Using Rspec with inherited_resources helpers and inherited views</a></h1>
+      <h1 class="entry-title">Using Rspec with inherited_resources helpers and inherited views</h1>
     
     
       <p class="meta">
@@ -106,7 +103,7 @@ Finally managed to &hellip;">
   </header>
 
 
-  <div class="entry-content"><p>I have updated a rails app I have been working on recently to a more recent version of rails 3.2, and all my tests where failing.
+<div class="entry-content"><p>I have updated a rails app I have been working on recently to a more recent version of rails 3.2, and all my tests where failing.
 Finally managed to have that working, figured I&#8217;d show how.</p>
 
 <h3>Mocking inherited_resources helpers in views specs.</h3>
@@ -326,71 +323,16 @@ is related to the controller, not the views, so the test case shouldn&#8217;t kn
 
 <p>Now let&#8217;s go back and make these tests green again.</p>
 </div>
-  
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
   
 
+<span class="byline author vcard">Posted by <span class="fn">Atwam</span></span>
 
-<time datetime="2013-04-27T22:09:00+01:00" pubdate data-updated="true">Apr 27<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>So, let&#8217;s be honest, I&#8217;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
-But now I have this new shinny application that I don&#8217;t want to deploy using Heroku :</p>
-
-<ul>
-<li>Because I am worried that if I start with Heroku, I&#8217;ll be too lazy to switch later.</li>
-<li>Because I know that at some point, my application is going to need plugins and binaries that I can&#8217;t get on Heroku.</li>
-<li>Because I&#8217;d rather have a portable application that I can deploy easily on any type of server.</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Building dep_selector on mac os x</a></h1>
-    
-    
-      <p class="meta">
-        
 
 
 
@@ -402,150 +344,38 @@ But now I have this new shinny application that I don&#8217;t want to deploy usi
   
 
 
-<time datetime="2013-04-25T23:13:00+01:00" pubdate data-updated="true">Apr 25<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Just a quick post, having finally figured out how to install dep_selector on mac os x.
-The issue is that having xcode installed which configures <code>clang</code> as the default compiler, some native gems break.</p>
-
-<p>It took me some time, but at long least I can now build a native gem using <code>gcc</code> instead of <code>clang</code> on mac os x.
-And you&#8217;ll see it&#8217;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
+<time datetime="2013-05-14T19:51:00+01:00" pubdate data-updated="true">May 14<span>th</span>, 2013</time>
       
-  <header>
+
+
+    </p>
     
-      <h1 class="entry-title"><a href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Multiple persistent stores and seed data with core data</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
+      <div class="sharing">
   
-
-
-<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true">May 11<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
-
-<h3>The problem</h3>
-
-<p>Your nice and shiny iOS app is supposed to have two data components : <strong>User data</strong> and <strong>Seed data</strong>.
-For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
-and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
-
-<p>So, you start thinking that hey, you&#8217;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
-You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
-
-<p><em>You typically use configurations if you want to store different entities in
- different stores. A persistent store coordinator can only have one managed
- object model, so by default each store associated with a given coordinator
- must contain the same entities. To work around this restriction, you can
- create a model that contains the union of all the entities you want to use.
- You then create configurations in the model for each of the subsets of
- entities that you want to use. You can then use this model when you create a
- coordinator. When you add stores, you specify the different store attributes
- by configuration. When you are creating your configurations, though, remember
- that you cannot create cross-store relationships.</em></p>
-
-<p>Well, that&#8217;s pretty much all the doc you&#8217;ll get from apple.
-There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
-<a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
-but not in a clear enough form for me. So, here&#8217;s how it works&#8230;</p>
-
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/" data-via="at_wam" data-counturl="http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/" >Tweet</a>
+  
+  
+  
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Read on &rarr;</a>
-    </footer>
-  
 
-
-    </article>
-  
-  
-    <article>
+    
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/">Spell checking should be part of your view tests</a></h1>
-    
-    
-      <p class="meta">
-        
+        <a class="basic-alignment left" href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/" title="Previous Post: From pow to a deployed rails app using chef, capistrano and vagrant - Part 1">&laquo; From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a>
+      
+      
+    </p>
+  </footer>
+</article>
 
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-02-25T21:16:00+00:00" pubdate data-updated="true">Feb 25<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>So it all started when I asked a friend to test this new app I&#8217;m building :
-&#8220;On your main page, <em>garantee</em>. You should really check your spelling, people will know you are French !&#8221;.</p>
-
-<p>So here I went, naively googling for &#8220;website spell checker&#8221;, with either pricey reports or simple websites
-where I&#8217;d have to copy-paste my text from all my pages. Then, I found <a href="http://afterthedeadline.com/">AfterTheDeadline</a>.
-It looks great, open-source, recently bought by wordpress.com, and they even provide an API.</p>
-
-<p>So, spent my evening doing stuff, and here we are with a new gem : <a href="https://rubygems.org/gems/merimee">Merimee</a> (<a href="http://github.com/atwam/merimee/">github</a>).</p>
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
 
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/">Read on &rarr;</a>
-    </footer>
-  
 
-
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
-</div>
 <aside class="sidebar">
   
     <section>
@@ -578,7 +408,7 @@ It looks great, open-source, recently bought by wordpress.com, and they even pro
 <section>
   <h1>GitHub Repos</h1>
   <ul id="gh_repos">
-    <li class="loading">Status updating&#8230;</li>
+    <li class="loading">Status updating...</li>
   </ul>
   
   <a href="https://github.com/atwam">@atwam</a> on GitHub
@@ -610,7 +440,7 @@ It looks great, open-source, recently bought by wordpress.com, and they even pro
 <section>
   <h1>Latest Tweets</h1>
   <ul id="tweets">
-    <li class="loading">Status updating&#8230;</li>
+    <li class="loading">Status updating...</li>
   </ul>
   <script type="text/javascript">
     $.domReady(function(){
@@ -630,6 +460,7 @@ It looks great, open-source, recently bought by wordpress.com, and they even pro
   
 </aside>
 
+
     </div>
   </div>
   <footer role="contentinfo"><p>
@@ -644,7 +475,10 @@ It looks great, open-source, recently bought by wordpress.com, and they even pro
       var disqus_shortname = 'atwamblog';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/';
+        var disqus_url = 'http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
