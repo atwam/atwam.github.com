@@ -1,10 +1,9 @@
 ---
 layout: post
 title: "From pow to a deployed rails app using chef, capistrano and vagrant - Part 2"
-date: 2013-04-27 23:03
+date: 2013-06-10 23:03
 comments: true
-published: false
-categories: 
+categories: rails, chef, capistrano
 ---
 
 Now that we have our vagrant box working with chef, let's use chef to configure our services and our app.
@@ -13,15 +12,12 @@ Now that we have our vagrant box working with chef, let's use chef to configure 
 
 Assuming that you have read some basics about chef, you'll know that the cookbooks we have downloaded provide recipes for installing various software.
 We could ask vagrant to install a few recipes, but it's probably better to assemble them in roles.
-We'll then assign these roles to one or several nodes, or use all of them on our box for testing.
+We'll then assign the roles to one or several nodes, or use all of them on our box for testing.
 
 For now, we probably want to have one `base` role (to install common software on all our nodes) and two roles to serve our application :
 
-database\_master
-: a simple install of postgres should be fine here.
-
-app\_server
-: this one will serve our RoR app.
+* `database\_master` : a simple install of postgres should be fine here.
+* `app\_server` : this one will serve our RoR app.
 
 One could think of other roles (workers, redis etc), but for my purpose and for now these two (and the `base` role) should be fine.
 
@@ -103,22 +99,75 @@ using your ssh key.
 If you hit a json parsing exception when chef reads your user json file, make sure you don't have trailing commas.
 You can check your JSON easily in `irb` using `require 'json'; JSON.parse(File.read('data_bags/users/wam.json'))`.
 
-## Creating a custom cookbook
+### Creating a custom cookbook ...
+ 
+There's a big choice to do here. We could either create a whole separate cookbook just for our app, configured with many
+default recipes, or for now just use an already created one.
 
-Most of the cookbooks we use provide LWRPs, that is a way to simply create what we need using a ruby script, which allows a greater flexibility
-than using simply our cookbooks default recipes.
-It makes sense to create a cookbook for our app, where we'll include any app specific configuration/templates etc.
+It is very likely that I'll have to create a cookbook at some point, because it's the only way to have your own recipes
+and reach a high enough level of customization.
 
+### .. or use and existing one
+I originally had a look at the [database cookbook](http://community.opscode.com/cookbooks/database) but finally decided
+to go the fast way by using two very neat cookbooks, [rackbox](https://github.com/teohm/rackbox-cookbook) and [databox](https://github.com/teohm/databox-cookbook).
+It will probably make sense to use `database` and `application` cookbooks, but they seem to be easier to work with when you are using a proper chef server
+and your own cookbook/recipes.
 
+`rackbox` includes `appbox` by default, which creates its own users for deployment/app running.
+I have found that these cookbooks are a bit limited for my taste (for example, they don't use data\_bags, which are a proper way of encrypting
+password instead of storing them in your chef repository... Well, next time.
 
-## Database master role
+## Setting up our roles
 
-Now that we have the base configuration for our servers (we'll probably modify it in a bit, once we have created our own custom cookbook),
-we need to create our `database_master` role. We'll make a heavy use of the [database cookbook](http://community.opscode.com/cookbooks/database)
-so make sure you have read its documentation.
+Let's start by adding the cookbooks to our `Berksfile` and run `berks install`
+```ruby Berksfile
+cookbook "runit", ">= 1.1.2"  # HACK: force-use this version
+cookbook "databox"
+cookbook "rackbox"
+```
 
+and create our `roles/database_master.rb`. We are using non encrypted passwords here, which isn't very secure.
+We should actually use encrypted data bags, but they don't play very nicely with roles (they are supposed to be used with recipes, which
+would mean custom cookbook), nor do they play nicely with `knife solo` (although a plugin exist, but it didn't work very well
+in my tests). Let's start this way, we'll see later to move to a more robust non solo chef.
 
+```ruby roles/database_master.rb
+name "database_master"
+description "Master postgresql node"
 
+run_list(
+  "databox::postgresql" # Or "databox" to include mysql as well
+)
+default_attributes(
+  :databox => {
+    :db_root_password => "PASSWORD_HERE",
+    :postgresql => [
+      {
+        "database_name" => "myapp_production",
+        "username" => "myapp",
+        "password" => "ANOTHER_PASSWORD_HERE"
+      }
+     ]
+  }
+)
+```
+
+Now running `vagrant provision` (or `vagrant up` or `vagrant reload` depending on whether your current vagrant box is up or not) should run this recipe, adding
+the `myapp` database. We can test that in `vagrant ssh`
+```bash
+$ psql -h localhost -d myapp_production -U myapp -W
+Password for user myapp:
+#psql (9.1.9)
+#[...] Yeepee
+```
+
+## What's next
+
+Next post will be about configuring a proper rails box using `rackbox`, setting up capistrano to deploy ... then deploy to a vps and get closer to production.
+I'm still not entirely happy with this deployment today. I should move to a proper cookbook, as I said, to get more customization options.
+For now, I want my app out, and will probably work a bit more later depending on how successful it is. The beauty of chef, after all, is that it makes
+it easy to set up new nodes and new deployments.
 
 ### References
-[Rails quick start](http://wiki.opscode.com/display/chef/Build+A+Rails+Stack) ([github](https://github.com/opscode/rails-quick-start))
+[Chef cookbooks for busy ruby developers](http://teohm.github.io/blog/2013/04/17/chef-cookbooks-for-busy-ruby-developers/)
+
