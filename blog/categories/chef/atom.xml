@@ -4,7 +4,7 @@
   <title><![CDATA[Category: chef | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/chef/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-05-14T21:23:56+01:00</updated>
+  <updated>2013-06-11T08:34:34+01:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -168,14 +168,13 @@ Vagrant.configure("2") do |config|
   # [snip] our previous config
   #
   config.berkshelf.enabled = true
-  config.vm.provision :chef_solo do |chef|</p>
+  config.vm.provision :chef_solo do |chef|
+    # The following is not necessary because we use berkshelf
+    # chef.cookbooks_path = "cookbooks"
+    chef.roles_path = "roles"
+    chef.data_bags_path = "data_bags"</p>
 
-<pre><code># The following is not necessary because we use berkshelf
-# chef.cookbooks_path = "cookbooks"
-chef.roles_path = "roles"
-chef.data_bags_path = "data_bags"
-
-# For now let's just install git to check that our chef provisioning is working
+<pre><code># For now let's just install git to check that our chef provisioning is working
 chef.add_recipe "git"
 
 # We'll use the following later

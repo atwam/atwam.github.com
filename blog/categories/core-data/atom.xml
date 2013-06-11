@@ -4,7 +4,7 @@
   <title><![CDATA[Category: core-data | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/core-data/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-05-14T21:23:56+01:00</updated>
+  <updated>2013-06-11T08:34:34+01:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -79,16 +79,13 @@ We do the same with a <em>PostCodesConf</em> configuration for our postcodes mod
 <p>We change our <code>-(NSManagedObjectModel*)managedObjectModel</code> to the following :</p>
 
 <p>``` objc
-- (NSManagedObjectModel *)managedObjectModel
+- (NSManagedObjectModel <em>)managedObjectModel
 {
-  if (__managedObjectModel != nil) {</p>
-
-<pre><code>return __managedObjectModel;
-</code></pre>
-
-<p>  }
-  NSURL <em>uModelURL = [[NSBundle mainBundle] URLForResource:@"UserModel" withExtension:@"momd"];
-  NSManagedObjectModel</em> uModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:uModelURL];</p>
+  if (<strong>managedObjectModel != nil) {
+    return </strong>managedObjectModel;
+  }
+  NSURL </em>uModelURL = [[NSBundle mainBundle] URLForResource:@"UserModel" withExtension:@"momd"];
+  NSManagedObjectModel* uModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:uModelURL];</p>
 
 <p>  NSURL <em>pdModelURL = [[NSBundle mainBundle] URLForResource:@"PostCodesModel" withExtension:@"momd"];
   NSManagedObjectModel</em> pdModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:pdModelURL];</p>
@@ -128,12 +125,9 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
 <p>``` objc
 - (NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
-  if (__persistentStoreCoordinator != nil) {</p>
-
-<pre><code>return __persistentStoreCoordinator;
-</code></pre>
-
-<p>  }</p>
+  if (<strong>persistentStoreCoordinator != nil) {
+    return </strong>persistentStoreCoordinator;
+  }</p>
 
 <p>  NSError *error = nil;
   __persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];</p>
@@ -143,12 +137,9 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
 <p>  NSURL* userURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"UserData.sqlite"];
   // Note that we use our UserConf here
   if (![__persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:@"UserConf" URL:userURL options:nil error:&amp;error])
-  {</p>
-
-<pre><code>NSLog(@"Error %@",error);
-</code></pre>
-
-<p>  }
+  {
+    NSLog(@"Error %@",error);
+  }
 }</p>
 
 <ul>
@@ -165,12 +156,10 @@ if (![[NSFileManager defaultManager] fileExistsAtPath:[storeURL path]])
   [[NSFileManager defaultManager] copyItemAtURL:baseURL toURL:adURL error:&amp;error];</p>
 
 <p>  // Create one coordinator that just migrates, but isn't used.
-  NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:</p>
-
-<pre><code>[NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
-[NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
-nil];
-</code></pre>
+  NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
+    [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
+    [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
+    nil];</p>
 
 <p>  // This will just handle the migration, without any configuration or else ...
   NSPersistentStore* tmpStore = [storeCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&amp;error];

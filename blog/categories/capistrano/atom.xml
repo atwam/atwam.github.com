@@ -4,7 +4,7 @@
   <title><![CDATA[Category: capistrano | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/capistrano/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-05-14T21:23:56+01:00</updated>
+  <updated>2013-06-11T08:34:34+01:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -12,6 +12,188 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[From pow to a deployed rails app using chef, capistrano and vagrant - Part 2]]></title>
+    <link href="http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers/"/>
+    <updated>2013-06-10T23:03:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers</id>
+    <content type="html"><![CDATA[<p>Now that we have our vagrant box working with chef, let's use chef to configure our services and our app.</p>
+
+<h2>Chef roles</h2>
+
+<p>Assuming that you have read some basics about chef, you'll know that the cookbooks we have downloaded provide recipes for installing various software.
+We could ask vagrant to install a few recipes, but it's probably better to assemble them in roles.
+We'll then assign the roles to one or several nodes, or use all of them on our box for testing.</p>
+
+<p>For now, we probably want to have one <code>base</code> role (to install common software on all our nodes) and two roles to serve our application :</p>
+
+<ul>
+<li><code>database\_master</code> : a simple install of postgres should be fine here.</li>
+<li><code>app\_server</code> : this one will serve our RoR app.</li>
+</ul>
+
+
+<p>One could think of other roles (workers, redis etc), but for my purpose and for now these two (and the <code>base</code> role) should be fine.</p>
+
+<h2>Base role</h2>
+
+<p>We want our base role to include the following :</p>
+
+<ul>
+<li><em>apt</em>, <em>git</em>, <em>sudo</em> and <em>build-essential</em> should be installed. We'll use the default cookbooks/recipes for each of these.</li>
+<li><em>users setup</em> : Should create the users (with their ssh key), give them sudo rights. We'll use the <code>users</code> cookbook.</li>
+</ul>
+
+
+<p>We start by editing our <code>Berksfile</code> to make sure all the cookbooks are included (<code>sudo</code>, <code>apt</code>, <code>git</code>, <code>build-essential</code>, <code>users</code>).
+Then let's create a role file.</p>
+
+<p><code>ruby roles/base.rb
+name "base"
+description "Base role applied to all nodes."
+run_list(
+  "recipe[apt]",
+  "recipe[build-essential]",
+  "recipe[git]",
+  "recipe[users::sysadmins]",
+  "recipe[sudo]"
+)
+</code></p>
+
+<p><em>The order matters here !</em> <em>apt</em> should appear first (it's used to handle packages), <em>build-essential</em> is used by pretty much
+everything, and especially by <code>ruby-shadow</code> which is a gem dependency of <code>users</code>.</p>
+
+<p>Reading <a href="http://community.opscode.com/cookbooks/users">the documentation of the users cookbook</a>, we see that we should define the users in a data bag
+(a way of telling chef about some data, list, including potentially encrypted password and ssh keys).</p>
+
+<p>Chef solo doesn't work very well with data bags (or the CLI doesn't work very well), so we'll just create the file manually.
+Also, we see in the users cookbook that it requires <code>chef-solo-search</code> to run with chef-solo.</p>
+
+<p>Adding <code>cookbook 'chef-solo-search', git: "https://github.com/edelight/chef-solo-search.git"</code> to our <code>Berksfile</code> should be good enough.</p>
+
+<p><code>bash
+$ mkdir data_bags/users
+$ vim data_bags/users/wam.json
+</code>
+```json data_bags/users/wam.json
+{
+  "id": "wam", //or your user name
+  // The following should be the result of openssl passwd -1 plainpasswd
+  // but that's md5 on a mac. Alternatively run mkpasswd -m sha-512 -S mySalt on a linux machine
+  "password": "$6$[...]098/",
+  "ssh_keys": [
+    // Copy paste from your ssh public key
+    "ssh-rsa AAA123...xyz== foo"
+    ],
+  "groups": [ "sysadmin" ],
+  "uid": 2001,
+  "shell": "\/bin\/bash",
+  "comment": ""
+}</p>
+
+<pre><code>
+Now we need to modify our `Vagrantfile` to use this role (and not the dummy git recipe we were using). An extra bit of precaution is needed here :
+the `sudo` cookbook/recipe will install `sudo` qnd configure it by default for the sysadmin group (lucky us, our user is a member).
+*It will override vagrant's sudo config, breaking vagrant provision using chef-solo*. To avoid that, we use vagrant's `chef.json` config
+to override the `sudo` configuration attributes for vagrant :
+
+```ruby
+  chef.add_role "base"
+  chef.json = {
+    :authorization =&gt; {
+      :sudo =&gt; {
+        :users =&gt; ["vagrant"],
+        :passwordless =&gt; true
+      }
+    }
+  }
+</code></pre>
+
+<p>Then it's on to <code>vagrant provision</code>, and ssh to whatever port was forwarded to 22 (for me it was <code>ssh localhost -p 2222</code>) to see that you log in
+using your ssh key.</p>
+
+<p>If you hit a json parsing exception when chef reads your user json file, make sure you don't have trailing commas.
+You can check your JSON easily in <code>irb</code> using <code>require 'json'; JSON.parse(File.read('data_bags/users/wam.json'))</code>.</p>
+
+<h3>Creating a custom cookbook ...</h3>
+
+<p>There's a big choice to do here. We could either create a whole separate cookbook just for our app, configured with many
+default recipes, or for now just use an already created one.</p>
+
+<p>It is very likely that I'll have to create a cookbook at some point, because it's the only way to have your own recipes
+and reach a high enough level of customization.</p>
+
+<h3>.. or use and existing one</h3>
+
+<p>I originally had a look at the <a href="http://community.opscode.com/cookbooks/database">database cookbook</a> but finally decided
+to go the fast way by using two very neat cookbooks, <a href="https://github.com/teohm/rackbox-cookbook">rackbox</a> and <a href="https://github.com/teohm/databox-cookbook">databox</a>.
+It will probably make sense to use <code>database</code> and <code>application</code> cookbooks, but they seem to be easier to work with when you are using a proper chef server
+and your own cookbook/recipes.</p>
+
+<p><code>rackbox</code> includes <code>appbox</code> by default, which creates its own users for deployment/app running.
+I have found that these cookbooks are a bit limited for my taste (for example, they don't use data_bags, which are a proper way of encrypting
+password instead of storing them in your chef repository... Well, next time.</p>
+
+<h2>Setting up our roles</h2>
+
+<p>Let's start by adding the cookbooks to our <code>Berksfile</code> and run <code>berks install</code>
+<code>ruby Berksfile
+cookbook "runit", "&gt;= 1.1.2"  # HACK: force-use this version
+cookbook "databox"
+cookbook "rackbox"
+</code></p>
+
+<p>and create our <code>roles/database_master.rb</code>. We are using non encrypted passwords here, which isn't very secure.
+We should actually use encrypted data bags, but they don't play very nicely with roles (they are supposed to be used with recipes, which
+would mean custom cookbook), nor do they play nicely with <code>knife solo</code> (although a plugin exist, but it didn't work very well
+in my tests). Let's start this way, we'll see later to move to a more robust non solo chef.</p>
+
+<p>```ruby roles/database_master.rb
+name "database_master"
+description "Master postgresql node"</p>
+
+<p>run_list(
+  "databox::postgresql" # Or "databox" to include mysql as well
+)
+default_attributes(
+  :databox => {
+    :db_root_password => "PASSWORD_HERE",
+    :postgresql => [
+      {
+        "database_name" => "myapp_production",
+        "username" => "myapp",
+        "password" => "ANOTHER_PASSWORD_HERE"
+      }
+     ]
+  }
+)
+```</p>
+
+<p>Now running <code>vagrant provision</code> (or <code>vagrant up</code> or <code>vagrant reload</code> depending on whether your current vagrant box is up or not) should run this recipe, adding
+the <code>myapp</code> database. We can test that in <code>vagrant ssh</code>
+```bash
+$ psql -h localhost -d myapp_production -U myapp -W
+Password for user myapp:</p>
+
+<h1>psql (9.1.9)</h1>
+
+<h1>[...] Yeepee</h1>
+
+<p>```</p>
+
+<h2>What's next</h2>
+
+<p>Next post will be about configuring a proper rails box using <code>rackbox</code>, setting up capistrano to deploy ... then deploy to a vps and get closer to production.
+I'm still not entirely happy with this deployment today. I should move to a proper cookbook, as I said, to get more customization options.
+For now, I want my app out, and will probably work a bit more later depending on how successful it is. The beauty of chef, after all, is that it makes
+it easy to set up new nodes and new deployments.</p>
+
+<h3>References</h3>
+
+<p><a href="http://teohm.github.io/blog/2013/04/17/chef-cookbooks-for-busy-ruby-developers/">Chef cookbooks for busy ruby developers</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[From pow to a deployed rails app using chef, capistrano and vagrant - Part 1]]></title>
@@ -168,14 +350,13 @@ Vagrant.configure("2") do |config|
   # [snip] our previous config
   #
   config.berkshelf.enabled = true
-  config.vm.provision :chef_solo do |chef|</p>
+  config.vm.provision :chef_solo do |chef|
+    # The following is not necessary because we use berkshelf
+    # chef.cookbooks_path = "cookbooks"
+    chef.roles_path = "roles"
+    chef.data_bags_path = "data_bags"</p>
 
-<pre><code># The following is not necessary because we use berkshelf
-# chef.cookbooks_path = "cookbooks"
-chef.roles_path = "roles"
-chef.data_bags_path = "data_bags"
-
-# For now let's just install git to check that our chef provisioning is working
+<pre><code># For now let's just install git to check that our chef provisioning is working
 chef.add_recipe "git"
 
 # We'll use the following later
