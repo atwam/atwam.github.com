@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T08:06:31+00:00</updated>
+  <updated>2016-02-04T10:13:15+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -39,8 +39,6 @@ Yet in the end, once you have set your mind on one or two models, you still have
 
 <p>The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the &ldquo;wanted&rdquo;) posts, and with more than 200cc. I&rsquo;m not claiming the data is perfect, far from it, but if you know a better source, let me know.</p>
 
-<p>As you can see below, I gathered prices and information for 15505 bikes.</p>
-
 <h1>Step 2 : Analysis</h1>
 
 <div class="highlight"><pre><code class="language-r" data-lang="r">libs<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;data.table&#39;</span><span class="p">,</span><span class="s">&#39;knitr&#39;</span><span class="p">,</span><span class="s">&#39;ggplot2&#39;</span><span class="p">,</span><span class="s">&#39;stringr&#39;</span><span class="p">,</span><span class="s">&#39;pander&#39;</span><span class="p">,</span><span class="s">&#39;dplyr&#39;</span><span class="p">,</span><span class="s">&#39;lubridate&#39;</span><span class="p">)</span>
@@ -68,7 +66,8 @@ data <span class="o">=</span> <span class="kp">within</span><span class="p">(</s
 <span class="p">})</span></code></pre></div>
 
 
-<p>Let&rsquo;s have a look at our data :</p>
+<p>As you can see below, I gathered prices and information for 17043 bikes.
+Let&rsquo;s have a look at our data :</p>
 
 <div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>data<span class="p">[,</span><span class="kp">sapply</span><span class="p">(</span>data<span class="p">,</span> <span class="kp">is.numeric</span><span class="p">),</span> with<span class="o">=</span><span class="kc">FALSE</span><span class="p">])</span></code></pre></div>
 

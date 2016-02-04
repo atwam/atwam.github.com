@@ -4,7 +4,7 @@
   <title><![CDATA[Category: data_science | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/data-science/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T08:06:31+00:00</updated>
+  <updated>2016-02-04T10:13:15+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -32,8 +32,6 @@ So, having lots of time on my hands at the moment, I started taking a quantitati
 # Step 1 : Get all the data
 The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the "wanted") posts, and with more than 200cc. I'm not claiming the data is perfect, far from it, but if you know a better source, let me know.
 
-As you can see below, I gathered prices and information for 15505 bikes.
-
 # Step 2 : Analysis
 
 <div class="highlight"><pre><code class="language-r" data-lang="r">libs<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;data.table&#39;</span><span class="p">,</span><span class="s">&#39;knitr&#39;</span><span class="p">,</span><span class="s">&#39;ggplot2&#39;</span><span class="p">,</span><span class="s">&#39;stringr&#39;</span><span class="p">,</span><span class="s">&#39;pander&#39;</span><span class="p">,</span><span class="s">&#39;dplyr&#39;</span><span class="p">,</span><span class="s">&#39;lubridate&#39;</span><span class="p">)</span>
@@ -59,7 +57,7 @@ data <span class="o">=</span> <span class="kp">within</span><span class="p">(</s
   ad_age <span class="o">=</span> <span class="kp">as.integer</span><span class="p">(</span><span class="kp">Sys.time</span><span class="p">()</span> <span class="o">-</span> parse_date_time<span class="p">(</span>str_extract<span class="p">(</span><span class="kp">url</span><span class="p">,</span> <span class="s">&quot;20\\d{6}&quot;</span><span class="p">),</span> <span class="s">&#39;Ymd&#39;</span><span class="p">))</span>
   ad_age<span class="p">[</span>ad_age <span class="o">&gt;</span> <span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">NA</span> <span class="c1"># Let&#39;s ignore all ads older than 2 years for ad_age</span>
 <span class="p">})</span></code></pre></div>
-
+As you can see below, I gathered prices and information for 17043 bikes.
 Let's have a look at our data :
 
 <div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>data<span class="p">[,</span><span class="kp">sapply</span><span class="p">(</span>data<span class="p">,</span> <span class="kp">is.numeric</span><span class="p">),</span> with<span class="o">=</span><span class="kc">FALSE</span><span class="p">])</span></code></pre></div>
