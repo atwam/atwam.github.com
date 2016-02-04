@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T01:05:41+00:00</updated>
+  <updated>2016-02-04T01:05:49+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -370,6 +370,8 @@ Let&rsquo;s run the query again, this time only looking a bikes which are more t
 <p>Next time, I&rsquo;ll look at the most frequent bike of the most frequent brand, and we&rsquo;ll see if these results still hold. Plus yeah, we&rsquo;ll have a first look at our pricing model and try to find some underpriced bikes.</p>
 
 <p>Stay tuned (and feel free to guess what model we&rsquo;ll be looking at in the comments, or let me know if you&rsquo;d be interested in another specific analysis).</p>
+
+<p><strong>If you want to re-publish all or part of this data/graphs/article, get in touch. Just ask.</strong></p>
 
 <p><em>I&rsquo;d like to get some data on insurance as well, but it&rsquo;s a lot harder to gather. If you know a way, let me know&hellip;</em></p>
 ]]></content>

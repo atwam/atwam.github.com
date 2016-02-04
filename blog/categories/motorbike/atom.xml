@@ -4,7 +4,7 @@
   <title><![CDATA[Category: motorbike | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/motorbike/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T01:05:41+00:00</updated>
+  <updated>2016-02-04T01:05:49+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -331,6 +331,8 @@ I've only looked at a few things, and it seems obvious here that many results ar
 Next time, I'll look at the most frequent bike of the most frequent brand, and we'll see if these results still hold. Plus yeah, we'll have a first look at our pricing model and try to find some underpriced bikes.
 
 Stay tuned (and feel free to guess what model we'll be looking at in the comments, or let me know if you'd be interested in another specific analysis).
+
+__If you want to re-publish all or part of this data/graphs/article, get in touch. Just ask.__
 
 _I'd like to get some data on insurance as well, but it's a lot harder to gather. If you know a way, let me know..._
 ]]></content>
