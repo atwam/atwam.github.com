@@ -18,7 +18,7 @@ So, having lots of time on my hands at the moment, I started taking a quantitati
 - Step 1 : Get all the data (or as much as I can).
 - Step 2 : Analysis, model
 - Step 3 : Profit (now that I have a model, I can know whether any ad is a good deal or not).
-
+<!--more-->
 # Step 1 : Get all the data
 The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the "wanted") posts, and with more than 200cc. I'm not claiming the data is perfect, far from it, but if you know a better source, let me know.
 
