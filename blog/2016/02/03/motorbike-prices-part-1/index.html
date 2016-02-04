@@ -130,6 +130,7 @@ Yet in the end, once you have set your mind on one or two models, you still have
 <div class="highlight"><pre><code class="language-r" data-lang="r">libs<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;data.table&#39;</span><span class="p">,</span><span class="s">&#39;knitr&#39;</span><span class="p">,</span><span class="s">&#39;ggplot2&#39;</span><span class="p">,</span><span class="s">&#39;stringr&#39;</span><span class="p">,</span><span class="s">&#39;pander&#39;</span><span class="p">,</span><span class="s">&#39;dplyr&#39;</span><span class="p">,</span><span class="s">&#39;lubridate&#39;</span><span class="p">)</span>
 <span class="kp">invisible</span><span class="p">(</span><span class="kp">lapply</span><span class="p">(</span>libs<span class="p">,</span> <span class="kn">require</span><span class="p">,</span> character.only<span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span>
 
+theme_set<span class="p">(</span>theme_bw<span class="p">())</span>
 data <span class="o">=</span> fread<span class="p">(</span><span class="s">&#39;~/Dev/autoray/out.csv&#39;</span><span class="p">)</span>
 
 data <span class="o">=</span> <span class="kp">within</span><span class="p">(</span>data<span class="p">,</span> <span class="p">{</span>

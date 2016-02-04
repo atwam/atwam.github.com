@@ -4,7 +4,7 @@
   <title><![CDATA[Category: data_science | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/data-science/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T01:14:03+00:00</updated>
+  <updated>2016-02-04T08:06:31+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -39,6 +39,7 @@ As you can see below, I gathered prices and information for 15505 bikes.
 <div class="highlight"><pre><code class="language-r" data-lang="r">libs<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;data.table&#39;</span><span class="p">,</span><span class="s">&#39;knitr&#39;</span><span class="p">,</span><span class="s">&#39;ggplot2&#39;</span><span class="p">,</span><span class="s">&#39;stringr&#39;</span><span class="p">,</span><span class="s">&#39;pander&#39;</span><span class="p">,</span><span class="s">&#39;dplyr&#39;</span><span class="p">,</span><span class="s">&#39;lubridate&#39;</span><span class="p">)</span>
 <span class="kp">invisible</span><span class="p">(</span><span class="kp">lapply</span><span class="p">(</span>libs<span class="p">,</span> <span class="kn">require</span><span class="p">,</span> character.only<span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span>
 
+theme_set<span class="p">(</span>theme_bw<span class="p">())</span>
 data <span class="o">=</span> fread<span class="p">(</span><span class="s">&#39;~/Dev/autoray/out.csv&#39;</span><span class="p">)</span>
 
 data <span class="o">=</span> <span class="kp">within</span><span class="p">(</span>data<span class="p">,</span> <span class="p">{</span>
