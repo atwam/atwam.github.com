@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T10:13:15+00:00</updated>
+  <updated>2016-02-04T11:25:27+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -126,7 +126,7 @@ Let&rsquo;s have a look at our data :</p>
 <li><em>mileage</em> : Mileage, duh</li>
 <li><em>title</em>, <em>description</em>, <em>search</em> : Plain text about the bike, used to add some other factors or infer the brand, model, etc.</li>
 <li><em>abs</em>, <em>panniers</em> : I look for these words in the titles, description. Not perfect, especially because I look them as strings, not as words. So a description about an <em>abs</em>olute steal would match an <em>abs</em>. Yeah, that sucks, but I haven&rsquo;t had the time to research what NLP tools R offers for stemming.</li>
-<li><em>ad_age</em> : The age of the ad, calculated from a time stamp in the url. This one actually gets lots of =N/A=, because some urls are for ads and don&rsquo;t show the timestamp.</li>
+<li><em>ad_age</em> : The age of the ad, calculated from a time stamp in the url. This one actually gets lots of <code>N/A</code>, because some urls are for ads and don&rsquo;t show the timestamp.</li>
 </ul>
 
 
@@ -188,10 +188,13 @@ Let&rsquo;s have a look at our data :</p>
 <p>As a first approximation, we can take the first word of the ad title to get the brand. Brands that use several words will be trimmed, but that should be good enough for now.</p>
 
 <div class="highlight"><pre><code class="language-r" data-lang="r">data<span class="o">$</span>brand <span class="o">=</span> <span class="kp">as.factor</span><span class="p">(</span>word<span class="p">(</span>data<span class="o">$</span>title<span class="p">))</span>
-brands <span class="o">=</span> data <span class="o">%&gt;%</span> group_by<span class="p">(</span>brand<span class="p">)</span> <span class="o">%&gt;%</span> tally<span class="p">()</span>
-big_brands <span class="o">=</span> <span class="kp">droplevels</span><span class="p">(</span>brands<span class="p">[</span>n <span class="o">&gt;</span> <span class="m">200</span><span class="p">]</span><span class="o">$</span>brand<span class="p">)</span>
+brands <span class="o">=</span> data <span class="o">%&gt;%</span> group_by<span class="p">(</span>brand<span class="p">)</span> <span class="o">%&gt;%</span> tally<span class="p">(</span>sort <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+big_brands <span class="o">=</span> brands<span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">8</span><span class="p">]</span><span class="o">$</span>brand
 data<span class="o">$</span>big_brand <span class="o">=</span> data<span class="o">$</span>brand <span class="o">%in%</span> big_brands
-ggplot<span class="p">(</span>data<span class="p">[</span>data<span class="o">$</span>big_brand<span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>brand<span class="p">),</span> se <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span></code></pre></div>
+
+<span class="c1"># Let&#39;s try a colorblind friendly version</span>
+cbPalette <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;#999999&quot;</span><span class="p">,</span> <span class="s">&quot;#E69F00&quot;</span><span class="p">,</span> <span class="s">&quot;#56B4E9&quot;</span><span class="p">,</span> <span class="s">&quot;#009E73&quot;</span><span class="p">,</span> <span class="s">&quot;#F0E442&quot;</span><span class="p">,</span> <span class="s">&quot;#0072B2&quot;</span><span class="p">,</span> <span class="s">&quot;#D55E00&quot;</span><span class="p">,</span> <span class="s">&quot;#CC79A7&quot;</span><span class="p">)</span>
+ggplot<span class="p">(</span>data<span class="p">[</span>data<span class="o">$</span>big_brand<span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>brand<span class="p">),</span> se <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">+</span> scale_colour_manual<span class="p">(</span>values<span class="o">=</span>cbPalette<span class="p">)</span></code></pre></div>
 
 
 <p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png" alt="center" /></p>
@@ -374,6 +377,8 @@ Let&rsquo;s run the query again, this time only looking a bikes which are more t
 <p><strong>If you want to re-publish all or part of this data/graphs/article, get in touch. Just ask.</strong></p>
 
 <p><em>I&rsquo;d like to get some data on insurance as well, but it&rsquo;s a lot harder to gather. If you know a way, let me know&hellip;</em></p>
+
+<p><em>Edit 1 : 2015-02-04 11:24 GMT - Changed the brand graph to only use 8 brands but with colorblinds-friendly palette.</em></p>
 ]]></content>
   </entry>
   
