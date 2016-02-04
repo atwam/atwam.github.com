@@ -13,7 +13,7 @@ But now I have this new shinny application that I don't want to deploy using Her
 * Because I know that at some point, my application is going to need plugins and binaries that I can't get on Heroku.
 * Because I'd rather have a portable application that I can deploy easily on any type of server.
 
-<!-- more -->
+<!--more-->
 
 ## 1. Planning and strategy
 I have this nice application, let's call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous [pow](http://pow.cx).
