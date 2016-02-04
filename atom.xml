@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T00:53:48+00:00</updated>
+  <updated>2016-02-04T00:55:52+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -30,6 +30,9 @@ Yet in the end, once you have set your mind on one or two models, you still have
 <li>Step 2 : Analysis, model</li>
 <li>Step 3 : Profit (now that I have a model, I can know whether any ad is a good deal or not).</li>
 </ul>
+
+
+<!--more-->
 
 
 <h1>Step 1 : Get all the data</h1>
