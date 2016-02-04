@@ -22,8 +22,6 @@ So, having lots of time on my hands at the moment, I started taking a quantitati
 # Step 1 : Get all the data
 The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the "wanted") posts, and with more than 200cc. I'm not claiming the data is perfect, far from it, but if you know a better source, let me know.
 
-As you can see below, I gathered prices and information for 15505 bikes.
-
 # Step 2 : Analysis
 
 {% highlight r %}
@@ -51,7 +49,7 @@ data = within(data, {
   ad_age[ad_age > 365*2] = NA # Let's ignore all ads older than 2 years for ad_age
 })
 {% endhighlight %}
-
+As you can see below, I gathered prices and information for 17043 bikes.
 Let's have a look at our data :
 
 {% highlight r %}
@@ -114,7 +112,7 @@ Here are the factors I managed to get to explain the prices.
 - *mileage* : Mileage, duh
 - *title*, *description*, *search* : Plain text about the bike, used to add some other factors or infer the brand, model, etc.
 - *abs*, *panniers* : I look for these words in the titles, description. Not perfect, especially because I look them as strings, not as words. So a description about an *abs*olute steal would match an *abs*. Yeah, that sucks, but I haven't had the time to research what NLP tools R offers for stemming.
-- *ad_age* : The age of the ad, calculated from a time stamp in the url. This one actually gets lots of =N/A=, because some urls are for ads and don't show the timestamp.
+- *ad_age* : The age of the ad, calculated from a time stamp in the url. This one actually gets lots of `N/A`, because some urls are for ads and don't show the timestamp.
 
 # Step 2 : Analysis
 ## Impact of the age on the price
@@ -123,7 +121,7 @@ Here are the factors I managed to get to explain the prices.
 ggplot(data) + geom_smooth(aes(y=price, x=age, color=category)) + scale_x_continuous(breaks = seq(0,90,10))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-3-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-3-1.png" title="center" alt="center" width="800px" />
 
 What can we see on this graph ?
 
@@ -175,13 +173,16 @@ As a first approximation, we can take the first word of the ad title to get the 
 
 {% highlight r %}
 data$brand = as.factor(word(data$title))
-brands = data %>% group_by(brand) %>% tally()
-big_brands = droplevels(brands[n > 200]$brand)
+brands = data %>% group_by(brand) %>% tally(sort = TRUE)
+big_brands = brands[1:8]$brand
 data$big_brand = data$brand %in% big_brands
-ggplot(data[data$big_brand]) + geom_smooth(aes(y=price, x=age, color=brand), se = FALSE)
+
+# Let's try a colorblind friendly version
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+ggplot(data[data$big_brand]) + geom_smooth(aes(y=price, x=age, color=brand), se = FALSE) + scale_colour_manual(values=cbPalette)
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png" title="center" alt="center" width="800px" />
 
 Here we can see not only the difference in average price between brands (be careful, I haven't distinguished between models here), but also how these decay with time.
 
@@ -194,7 +195,7 @@ BMW are more expensive than the other brands as well in their first 7 years or s
 ggplot(data) + geom_smooth(aes(y=price, x=cc))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-7-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-7-1.png" title="center" alt="center" width="800px" />
 
 Not much to see here by default, we can just see that the price of a bike grows (almost linearly) with the engine size. That is until 1800cc (Goldwings), then beyond 2000cc you enter the realm of the Rocket III which is just less expensive than the goldwing.
 
@@ -205,7 +206,7 @@ Some bikes seem to have crazy mileage (300k), so let's stick to stuff with reaso
 ggplot(subset(data, mileage < 100000)) + geom_smooth(aes(y=price, x=mileage))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-8-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-8-1.png" title="center" alt="center" width="800px" />
 
 Big surprise, the price drops as the mileage increase. The effect seems almost linear to start with, then seems to decay. We can probably work with a linear decay for the first 25k, beyond that it just makes sense to use a log decay...
 
@@ -314,7 +315,7 @@ $ price = 8325 + logMileage * (62 - 45 * age) $
 ggplot(data) + geom_smooth(aes(y=price, x=age, color=seller_type)) + scale_x_continuous(breaks = seq(0,90,10))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-11-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-11-1.png" title="center" alt="center" width="800px" />
 
 The answer seems consistently *yes* !
 
@@ -325,7 +326,7 @@ It seems intuitive to think that good deals will be sold quickly, and the longer
 ggplot(data) + geom_smooth(aes(y=price, x=ad_age)) + scale_x_continuous(breaks = seq(0,365*2,30))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-12-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-12-1.png" title="center" alt="center" width="800px" />
 
 So *yes*, our intuition holds, it looks like the average price for new ads is around £1000 less than for ads that are 2 months old.
 There is a bias here, because many ads for new models are put by dealers and left forever.
@@ -336,7 +337,7 @@ Let's run the query again, this time only looking a bikes which are more than 2 
 ggplot(data[age >= 2]) + geom_smooth(aes(y=price, x=ad_age, color=seller_type)) + scale_x_continuous(breaks = seq(0,365*2,30))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-13-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-13-1.png" title="center" alt="center" width="800px" />
 
 What we can see here is still that good deals move quickly, and this difference is even more pronounced for private sellers than it is for dealers. An ad that has been out for two months is on average £1000 more expensive than the one that will get sold within its first few days.
 
@@ -348,7 +349,7 @@ We'll see in a next post whether it still holds when looking at data for one sin
 ggplot(data) + geom_smooth(aes(y=price, x=age, color=abs)) + scale_x_continuous(breaks = seq(0,90,10))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-14-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-14-1.png" title="center" alt="center" width="800px" />
 
 Well, we can see that ABS definitely seems to keep its increased price, at least for recent bikes. One has to be careful though, because ABS is usually found on higher end bikes, so this difference in price could just be a bias. One would have to do a price comparison for a specific model (with enough data).
 
@@ -358,7 +359,7 @@ Well, we can see that ABS definitely seems to keep its increased price, at least
 ggplot(data) + geom_smooth(aes(y=price, x=distance))
 {% endhighlight %}
 
-![center](/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-15-1.png)
+<img src="/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-15-1.png" title="center" alt="center" width="800px" />
 
 Hard to say anything here. Could be some bias from big cities that appear at some distance from London. Given we don't have the postcode for all ads, it's hard to go beyond this useless graph.
 
@@ -372,3 +373,5 @@ Stay tuned (and feel free to guess what model we'll be looking at in the comment
 __If you want to re-publish all or part of this data/graphs/article, get in touch. Just ask.__
 
 _I'd like to get some data on insurance as well, but it's a lot harder to gather. If you know a way, let me know..._
+
+_Edit 1 : 2015-02-04 11:24 GMT - Changed the brand graph to only use 8 brands but with colorblinds-friendly palette._
