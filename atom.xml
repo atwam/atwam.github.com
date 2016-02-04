@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2016-02-04T11:25:27+00:00</updated>
+  <updated>2016-02-04T11:36:56+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -137,7 +137,7 @@ Let&rsquo;s have a look at our data :</p>
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span><span class="kp">category</span><span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-3-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-3-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>What can we see on this graph ?</p>
 
@@ -197,7 +197,7 @@ cbPalette <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">
 ggplot<span class="p">(</span>data<span class="p">[</span>data<span class="o">$</span>big_brand<span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>brand<span class="p">),</span> se <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">+</span> scale_colour_manual<span class="p">(</span>values<span class="o">=</span>cbPalette<span class="p">)</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>Here we can see not only the difference in average price between brands (be careful, I haven&rsquo;t distinguished between models here), but also how these decay with time.</p>
 
@@ -209,7 +209,7 @@ BMW are more expensive than the other brands as well in their first 7 years or s
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>cc<span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-7-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-7-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>Not much to see here by default, we can just see that the price of a bike grows (almost linearly) with the engine size. That is until 1800cc (Goldwings), then beyond 2000cc you enter the realm of the Rocket III which is just less expensive than the goldwing.</p>
 
@@ -220,7 +220,7 @@ BMW are more expensive than the other brands as well in their first 7 years or s
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span><span class="kp">subset</span><span class="p">(</span>data<span class="p">,</span> mileage <span class="o">&lt;</span> <span class="m">100000</span><span class="p">))</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>mileage<span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-8-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-8-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>Big surprise, the price drops as the mileage increase. The effect seems almost linear to start with, then seems to decay. We can probably work with a linear decay for the first 25k, beyond that it just makes sense to use a log decay&hellip;</p>
 
@@ -322,7 +322,7 @@ $ price = 8325 + logMileage * (62 - 45 * age) $</p>
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>seller_type<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-11-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-11-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>The answer seems consistently <em>yes</em> !</p>
 
@@ -333,7 +333,7 @@ $ price = 8325 + logMileage * (62 - 45 * age) $</p>
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>ad_age<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">,</span><span class="m">30</span><span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-12-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-12-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>So <em>yes</em>, our intuition holds, it looks like the average price for new ads is around £1000 less than for ads that are 2 months old.
 There is a bias here, because many ads for new models are put by dealers and left forever.
@@ -342,7 +342,7 @@ Let&rsquo;s run the query again, this time only looking a bikes which are more t
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">[</span>age <span class="o">&gt;=</span> <span class="m">2</span><span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>ad_age<span class="p">,</span> color<span class="o">=</span>seller_type<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">,</span><span class="m">30</span><span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-13-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-13-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>What we can see here is still that good deals move quickly, and this difference is even more pronounced for private sellers than it is for dealers. An ad that has been out for two months is on average £1000 more expensive than the one that will get sold within its first few days.</p>
 
@@ -353,7 +353,7 @@ Let&rsquo;s run the query again, this time only looking a bikes which are more t
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span><span class="kp">abs</span><span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-14-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-14-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>Well, we can see that ABS definitely seems to keep its increased price, at least for recent bikes. One has to be careful though, because ABS is usually found on higher end bikes, so this difference in price could just be a bias. One would have to do a price comparison for a specific model (with enough data).</p>
 
@@ -362,7 +362,7 @@ Let&rsquo;s run the query again, this time only looking a bikes which are more t
 <div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>distance<span class="p">))</span></code></pre></div>
 
 
-<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-15-1.png" alt="center" /></p>
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-15-1.png" title="center" alt="center" width="800px" /></p>
 
 <p>Hard to say anything here. Could be some bias from big cities that appear at some distance from London. Given we don&rsquo;t have the postcode for all ads, it&rsquo;s hard to go beyond this useless graph.</p>
 
