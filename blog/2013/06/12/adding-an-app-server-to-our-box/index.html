@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>From pow to a deployed rails app using chef, capistrano and vagrant - Part 3 - Atwam</title>
+  <meta name="author" content="Atwam">
+
+  
+  <meta name="description" content="Now that we have a server running our database, we want to make it also able to run our rails app.
+As I said in the previous post, I could use the &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Atwam" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-29496128-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Atwam</a></h1>
+  
+    <h2>I do stuff, and write about it</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.atwam.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">From pow to a deployed rails app using chef, capistrano and vagrant - Part 3</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-12T08:47:00+01:00" pubdate data-updated="true"></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Now that we have a server running our database, we want to make it also able to run our rails app.
+As I said in the previous post, I could use the full <code>application</code> cookbook, but I&rsquo;d have to create my
+own cookbook and recipe to use that properly. For now, I&rsquo;ll just rely on <code>rackbox</code> (and its dependency <code>appbox</code>).</p>
+
+<h2>Managing with <code>appbox</code></h2>
+
+<p>The <code>appbox</code> cookbook does pretty much the stuff that we configured earlier (setting up users etc). Since it&rsquo;s a dependency of <code>rackbox</code>,
+we are pretty much forced to use it (<code>rackbox</code> does call <code>appbox</code> default recipe).</p>
+
+<p>Having added <code>appbox</code> to our <code>Berksfile</code>, I had to modify the <code>roles/base.rb</code> :</p>
+
+<ul>
+<li>Let app box know that my admin user name is wam.</li>
+<li>Generate a ssh key for to login as the deploy user.</li>
+<li>Make sure the app box recipe is run before I run my <code>sudo</code> and <code>users::sysadmins</code> recipe.</li>
+</ul>
+
+
+<p>We&rsquo;ll start by creating the deploy key :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ssh-keygen -t rsa -C <span class="s2">&quot;wam@scube&quot;</span> -f ~/.ssh/scube_deploy_rsa
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>roles/base.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">name</span> <span class="s2">&quot;base&quot;</span>
+</span><span class='line'><span class="n">description</span> <span class="s2">&quot;Base role applied to all nodes.&quot;</span>
+</span><span class='line'><span class="n">run_list</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[apt]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[build-essential]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[git]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;appbox&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[users::sysadmins]&quot;</span><span class="p">,</span> <span class="c1"># Necessary to run after appbox to add our stuff</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[sudo]&quot;</span> <span class="c1"># Same</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'><span class="n">override_attributes</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;appbox&quot;</span>  <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="s2">&quot;deploy_keys&quot;</span> <span class="o">=&gt;</span> <span class="o">[</span>
+</span><span class='line'>      <span class="s2">&quot;ssh-rsa [...]&quot;</span> <span class="c1"># content of ~/.ssh/scube_deploy_rsa.pub</span>
+</span><span class='line'>    <span class="o">]</span><span class="p">,</span>
+</span><span class='line'>    <span class="s2">&quot;admin_user&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;wam&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Adding a rack server</h2>
+
+<p>I&rsquo;ve chosen to use passenger + nginx, which is a popular choice among the rails community. I was tempted for a moment by puma on jruby, but I want
+my app online faster and will bother changing this kind of thing later (chef makes it easy to test new nodes with new recipes..)</p>
+
+<p>Let&rsquo;s create a <code>roles/app_server.rb</code> :</p>
+
+<figure class='code'><figcaption><span>roles/app_server.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">name</span> <span class="s2">&quot;app_server&quot;</span>
+</span><span class='line'><span class="n">description</span> <span class="s2">&quot;Serving http requests for the app. Main app server&quot;</span>
+</span><span class='line'><span class="n">run_list</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;rackbox&quot;</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'><span class="n">override_attributes</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;rackbox&quot;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="s2">&quot;ruby&quot;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;versions&quot;</span><span class="o">=&gt;</span> <span class="o">[</span><span class="s2">&quot;1.9.3-p385&quot;</span><span class="o">]</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;global&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;1.9.3-p385&quot;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="s2">&quot;apps&quot;</span><span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;passenger&quot;</span><span class="o">=&gt;</span> <span class="o">[</span>
+</span><span class='line'>        <span class="p">{</span><span class="s2">&quot;appname&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;scube&quot;</span><span class="p">,</span> <span class="s2">&quot;hostname&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;my.hostname.com&quot;</span><span class="p">}</span>
+</span><span class='line'>      <span class="o">]</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now to make it work with vagrant, two changes are necessary in our <code>Vagrantfile</code> :</p>
+
+<ul>
+<li>We need to make sure that the <code>chef</code> version we are using is 11 or more. By default my vagrant was using chef 10, and the <code>rackbox</code>
+(more specifically the <code>runit</code> it uses) was throwing an error (NameError: Cannot find a resource for load_new_resource_state on ubuntu version 12.04).</li>
+<li>We add a port mapping to access the http port of our server on <code>localhost:8888</code></li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Stuff here</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:forwarded_port</span><span class="p">,</span> <span class="ss">guest</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="ss">host</span><span class="p">:</span> <span class="mi">8888</span>
+</span><span class='line'><span class="c1"># Put this line just before your config.vm.provision :chef_solo line</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:shell</span><span class="p">,</span> <span class="ss">:inline</span> <span class="o">=&gt;</span> <span class="s2">&quot;gem install chef --version 11.4.2 --no-rdoc --no-ri --conservative&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>:shell</code> provision makes sure that vagrant updates the chef gem before actually running our <code>chef-solo</code> provision.
+Now it&rsquo;s on to <code>vagrant provision</code>, stuff should appear in green and <a href="http://localhost:8888">http://localhost:8888</a> should show a 404 error.
+Yes of course, we haven&rsquo;t deployed our app yet. That&rsquo;ll be next.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Atwam</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-12T08:47:00+01:00" pubdate data-updated="true"></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/06/10/configuring-chef-solo-for-our-servers/" title="Previous Post: From pow to a deployed rails app using chef, capistrano and vagrant - Part 2">&laquo; From pow to a deployed rails app using chef, capistrano and vagrant - Part 2</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2016/02/03/motorbike-prices-part-1/" title="Next Post: Motorbike Prices">Motorbike Prices &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/03/motorbike-prices-part-1/">Motorbike Prices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/12/adding-an-app-server-to-our-box/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 3</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/10/configuring-chef-solo-for-our-servers/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/">Using Rspec with inherited_resources helpers and inherited views</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/atwam">@atwam</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'atwam',
+            count: 0,
+            skip_forks: true,
+            ignore: '',
+            only: 'merimee,money-historical-bank',
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Atwam -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'atwamblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box/';
+        var disqus_url = 'http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

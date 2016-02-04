@@ -1,43 +1,83 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
-    <url>
-        <loc>
-            http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/
-        </loc>
-        <lastmod>2013-04-26T00:03:25+01:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/
-        </loc>
-        <lastmod>2012-05-12T00:40:58+01:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/</loc>
-        <lastmod>2013-04-26T08:40:09+01:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/
-        </loc>
-        <lastmod>2013-04-28T00:05:24+01:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/
-        </loc>
-        <lastmod>2013-05-14T21:23:50+01:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers/</loc>
-        <lastmod>2013-06-11T08:34:23+01:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.atwam.com/blog/archives/</loc>
-        <lastmod>2013-06-11T08:34:23+01:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.atwam.com/</loc>
-        <lastmod>2013-06-11T08:34:23+01:00</lastmod>
-    </url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>http://blog.atwam.com/blog/2016/02/03/motorbike-prices-part-1/</loc>
+<lastmod>2016-02-03T20:13:00+00:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box/</loc>
+<lastmod>2013-06-12T08:47:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers/</loc>
+<lastmod>2013-06-10T23:03:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views/</loc>
+<lastmod>2013-05-14T19:51:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/</loc>
+<lastmod>2013-04-27T22:09:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/</loc>
+<lastmod>2013-04-25T23:13:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/</loc>
+<lastmod>2012-05-11T23:20:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/</loc>
+<lastmod>2012-02-25T21:16:00+00:00</lastmod>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/archives/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/rails/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/rspec/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/merimee/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/core-data/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/ios/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/ruby/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/gem/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/chef/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/vagrant/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/capistrano/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/rails/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/chef/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/motorbike/</loc>
+</url>
+<url>
+<loc>http://blog.atwam.com/blog/categories/data-science/</loc>
+</url>
 </urlset>

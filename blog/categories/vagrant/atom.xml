@@ -4,7 +4,7 @@
   <title><![CDATA[Category: vagrant | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/vagrant/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-06-11T08:34:34+01:00</updated>
+  <updated>2016-02-04T00:53:48+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -18,191 +18,212 @@
     <link href="http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/"/>
     <updated>2013-04-27T22:09:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo</id>
-    <content type="html"><![CDATA[<p>So, let's be honest, I've been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
-But now I have this new shinny application that I don't want to deploy using Heroku :</p>
+    <content type="html"><![CDATA[So, let's be honest, I've been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
+But now I have this new shinny application that I don't want to deploy using Heroku :
 
-<ul>
-<li>Because I am worried that if I start with Heroku, I'll be too lazy to switch later.</li>
-<li>Because I know that at some point, my application is going to need plugins and binaries that I can't get on Heroku.</li>
-<li>Because I'd rather have a portable application that I can deploy easily on any type of server.</li>
-</ul>
+* Because I am worried that if I start with Heroku, I'll be too lazy to switch later.
+* Because I know that at some point, my application is going to need plugins and binaries that I can't get on Heroku.
+* Because I'd rather have a portable application that I can deploy easily on any type of server.
 
+<!--more-->
 
-<!-- more -->
+## 1. Planning and strategy
+I have this nice application, let's call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous [pow](http://pow.cx).
 
+My goal is to have :
 
-<h2>1. Planning and strategy</h2>
+* A server configuration using chef
+* An easy deployment using capistrano
+* A way to locally run a copy of the server deployment using vagrant
 
-<p>I have this nice application, let's call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous <a href="http://pow.cx">pow</a>.</p>
+This should allow me to easily change/add services on my box, and scale it up should the need arise.
+So, the plan is the following :
 
-<p>My goal is to have :</p>
+1. Install `vagrant`, that I'll use to launch virtualized servers to test my chef configuration.
+2. Prepare a chef configuration for two roles : app server and database server. 
+I'll start by having the same machine (in vagrant for now) running the two roles, knowing that I'll be able to split that to more servers if I need to scale.
+3. Setup capistrano on my rails app to have it deploy nicely to my machines.
 
-<ul>
-<li>A server configuration using chef</li>
-<li>An easy deployment using capistrano</li>
-<li>A way to locally run a copy of the server deployment using vagrant</li>
-</ul>
+## 2. Vagrant for testing locally the server configuration
 
-
-<p>This should allow me to easily change/add services on my box, and scale it up should the need arise.
-So, the plan is the following :</p>
-
-<ol>
-<li>Install <code>vagrant</code>, that I'll use to launch virtualized servers to test my chef configuration.</li>
-<li>Prepare a chef configuration for two roles : app server and database server.
-I'll start by having the same machine (in vagrant for now) running the two roles, knowing that I'll be able to split that to more servers if I need to scale.</li>
-<li>Setup capistrano on my rails app to have it deploy nicely to my machines.</li>
-</ol>
-
-
-<h2>2. Vagrant for testing locally the server configuration</h2>
-
-<p>Well, it'll be short. Head over to <a href="http://www.vagrantup.com">vagrant's website</a> where its marvelous developper has done a very complete getting-started guide.
+Well, it'll be short. Head over to [vagrant's website](http://www.vagrantup.com) where its marvelous developper has done a very complete getting-started guide.
 Once installed (and don't forget to install virtualbox too), I'm pretty much following it.
-I'll chose the <code>precise64</code> box, an ubuntu 64 bits image, but you can of course choose another box found <a href="http://www.vagrantbox.es/">here</a></p>
+I'll chose the `precise64` box, an ubuntu 64 bits image, but you can of course choose another box found [here](http://www.vagrantbox.es/)
 
-<p>I'll start by creating a directory that will hold our deployment related configuration : vagrant and chef's config.
-I have chosen to have this directory separate from my application's directory.</p>
+I'll start by creating a directory that will hold our deployment related configuration : vagrant and chef's config.
+I have chosen to have this directory separate from my application's directory.
 
-<p><code>bash
-$ mkdir deployment &amp;&amp; cd deployment
-$ vagrant init
-$ vagrant box add precise64 http://files.vagrantup.com/precise64.box # Downloads the box
-</code></p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>mkdir deployment <span class="o">&amp;&amp;</span> <span class="nb">cd </span>deployment
+</span><span class='line'><span class="nv">$ </span>vagrant init
+</span><span class='line'><span class="nv">$ </span>vagrant box add precise64 http://files.vagrantup.com/precise64.box <span class="c"># Downloads the box</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Then let's edit our <code>Vagrantfile</code> to change a few defaults to better suit us :</p>
+Then let's edit our `Vagrantfile` to change a few defaults to better suit us :
 
-<p><code>ruby Vagrantfile
-Vagrant.configure("2") do |config|
-  config.vm.box = "precise64"
-  # This line ensures that we'll know where to find the box should we clone our deployment repo on another computer
-  config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-end
-</code></p>
+<figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;precise64&quot;</span>
+</span><span class='line'>  <span class="c1"># This line ensures that we&#39;ll know where to find the box should we clone our deployment repo on another computer</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box_url</span> <span class="o">=</span> <span class="s2">&quot;http://files.vagrantup.com/precise64.box&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>We just start the box with <code>vagrant up</code> and check that we manage to connect to it using <code>vagrant ssh</code>. It's working, great, we have a blank slate to work on !</p>
+We just start the box with `vagrant up` and check that we manage to connect to it using `vagrant ssh`. It's working, great, we have a blank slate to work on !
 
-<h2>3. Chef in the kitchen</h2>
+## 3. Chef in the kitchen
 
-<p><a href="http://www.opscode.com/chef/">Chef</a> will be used to handle the configuration/bootstrapping of my servers.
+[Chef](http://www.opscode.com/chef/) will be used to handle the configuration/bootstrapping of my servers.
 I've done my fair share of playing with ssh in the past, only to realize that administering a server for a side project using ssh is fun until
-you have to come back to it after a few months and remember where all the things are and where you should do you change.</p>
+you have to come back to it after a few months and remember where all the things are and where you should do you change.
 
-<p>With chef, the configuration is stored on git, and if I need to change anything, there's only one place to go.
-Soooo, let's start.</p>
+With chef, the configuration is stored on git, and if I need to change anything, there's only one place to go.
+Soooo, let's start.
 
-<p>```bash
-$ # I'm still in my deployment directory that I created earlier
-$ cat > Gemfile &lt;&lt;EOF
-source :rubygems</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="c"># I&#39;m still in my deployment directory that I created earlier</span>
+</span><span class='line'><span class="nv">$ </span>cat &gt; Gemfile <span class="s">&lt;&lt;EOF</span>
+</span><span class='line'><span class="s">source :rubygems</span>
+</span><span class='line'>
+</span><span class='line'><span class="s">gem &quot;chef&quot; # The main gem</span>
+</span><span class='line'><span class="s">gem &quot;knife-solo&quot; # Chef solo to bootstrap/configure chef on individual machines through ssh</span>
+</span><span class='line'><span class="s">gem &quot;berkshelf&quot; # To manage cookbooks</span>
+</span><span class='line'><span class="s">EOF</span>
+</span><span class='line'><span class="nv">$ </span>bundle install
+</span></code></pre></td></tr></table></div></figure>
 
-<p>gem "chef" # The main gem
-gem "knife-solo" # Chef solo to bootstrap/configure chef on individual machines through ssh
-gem "berkshelf" # To manage cookbooks
-EOF
-$ bundle install
-```</p>
+If you see an error requesting gecode when you run `bundle install` then `brew install --use-llvm gecode` should be good enough to make it work.
+It may be a bit more complicated than that, just look at [this blog post](/blog/2013/04/25/building-dep-selector-on-mac-os-x/) if you have issues installing the gems above.
 
-<p>If you see an error requesting gecode when you run <code>bundle install</code> then <code>brew install --use-llvm gecode</code> should be good enough to make it work.
-It may be a bit more complicated than that, just look at <a href="{%%20post_url%202013-04-25-building-dep-selector-on-mac-os-x%20%}">this blog post</a> if you have issues installing the gems above.</p>
+That should cover the installation of the main `chef` gem and of `knife-solo`. Chef can be configured to use with a chef server (useful to manage many machines)
+but for now I'll be using `knife-solo` (also known as chef-solo) which should be good enough.
 
-<p>That should cover the installation of the main <code>chef</code> gem and of <code>knife-solo</code>. Chef can be configured to use with a chef server (useful to manage many machines)
-but for now I'll be using <code>knife-solo</code> (also known as chef-solo) which should be good enough.</p>
+Now let's initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.
 
-<p>Now let's initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>knife solo init . <span class="c"># Creates the chef-repo here</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p><code>bash
-$ knife solo init . # Creates the chef-repo here
-</code></p>
-
-<p>If you have read a bit about chef (of course you have), you know that one of the main ingredients (ahah) are the <em>cookbooks</em>.
+If you have read a bit about chef (of course you have), you know that one of the main ingredients (ahah) are the *cookbooks*.
 Opscode has gathered many cookbooks contributed by the community.
-The standard way of installing these cookbook is through <code>knife cookbook site install blah</code>, but I have included the <a href="http://berkshelf.com/">berkshelf</a> gem which will handle
-our <code>cookbooks</code> directory for us and get all the proper cookbooks and their dependencies. The list of cookbooks is managed in a <code>Berksfile</code>.</p>
+The standard way of installing these cookbook is through `knife cookbook site install blah`, but I have included the [berkshelf](http://berkshelf.com/) gem which will handle
+our `cookbooks` directory for us and get all the proper cookbooks and their dependencies. The list of cookbooks is managed in a `Berksfile`.
 
-<p>For now, let's start by installing some cookbooks. We'll see later to configure them and our app.</p>
+For now, let's start by installing some cookbooks. We'll see later to configure them and our app.
 
-<p>```ruby Berksfile
-site :opscode</p>
+<figure class='code'><figcaption><span>Berksfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">site</span> <span class="ss">:opscode</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cookbook</span> <span class="s1">&#39;apt&#39;</span>
+</span><span class='line'><span class="n">cookbook</span> <span class="s1">&#39;build-essential&#39;</span>
+</span><span class='line'><span class="n">cookbook</span> <span class="s1">&#39;nginx&#39;</span>
+</span><span class='line'><span class="n">cookbook</span> <span class="s1">&#39;database&#39;</span>
+</span><span class='line'><span class="n">cookbook</span> <span class="s1">&#39;git&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+A few comments on these cookbooks ..
 
-<p>cookbook 'apt'
-cookbook 'build-essential'
-cookbook 'nginx'
-cookbook 'database'
-cookbook 'git'
-```
-A few comments on these cookbooks ..</p>
+apt
+: Used to make sure this package manager is installed on the ubuntu box that we'll be using.
 
-<p>apt
-: Used to make sure this package manager is installed on the ubuntu box that we'll be using.</p>
+build-essential
+: Make sure we can build stuff. This one will be included anyway since it's a dependency of for many other packages.
 
-<p>build-essential
-: Make sure we can build stuff. This one will be included anyway since it's a dependency of for many other packages.</p>
+[nginx](http://community.opscode.com/cookbooks/nginx)
+: Planning to use this lightweight web server to serve our rails app
 
-<p><a href="http://community.opscode.com/cookbooks/nginx">nginx</a>
-: Planning to use this lightweight web server to serve our rails app</p>
+[database](http://community.opscode.com/cookbooks/database)
+: This cookbook is an alternative to the [`postgresql`](http://community.opscode.com/cookbooks/postgresql). It can install mysql or postgresql and should allow us later to use a master/slave configuration.
 
-<p><a href="http://community.opscode.com/cookbooks/database">database</a>
-: This cookbook is an alternative to the <a href="http://community.opscode.com/cookbooks/postgresql"><code>postgresql</code></a>. It can install mysql or postgresql and should allow us later to use a master/slave configuration.</p>
+Now let's make sure these cookbooks are there and available :
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>berks install
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Now let's make sure these cookbooks are there and available :
-<code>bash
-$ berks install
-</code></p>
+## 4. Make vagrant use chef
 
-<h2>4. Make vagrant use chef</h2>
-
-<p>Now we'll need to make vagrant use our chef cookbooks and recives, so that we'll be able to test our chef configuration.
+Now we'll need to make vagrant use our chef cookbooks and recives, so that we'll be able to test our chef configuration.
 For now we'll just make sure it installs correctly a simple recipe (git, for example). We'll cover the proper configuration
-of our servers in a later post.</p>
+of our servers in a later post.
 
-<p>Since we are using berkshelf to manage our cookbooks, we'd better use the <code>vagrant-berkshelf</code> plugin :
-<code>bash
-$ vagrant plugin install vagrant-berkshelf
-</code></p>
+Since we are using berkshelf to manage our cookbooks, we'd better use the `vagrant-berkshelf` plugin :
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>vagrant plugin install vagrant-berkshelf
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Now let's add a few lines in our <code>Vagrantfile</code> :</p>
+Now let's add a few lines in our `Vagrantfile` :
 
-<p>```ruby Vagrantfile
-Vagrant.configure("2") do |config|
-  # [snip] our previous config
-  #
-  config.berkshelf.enabled = true
-  config.vm.provision :chef_solo do |chef|
-    # The following is not necessary because we use berkshelf
-    # chef.cookbooks_path = "cookbooks"
-    chef.roles_path = "roles"
-    chef.data_bags_path = "data_bags"</p>
+<figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>  <span class="c1"># [snip] our previous config</span>
+</span><span class='line'>  <span class="c1">#</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">berkshelf</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:chef_solo</span> <span class="k">do</span> <span class="o">|</span><span class="n">chef</span><span class="o">|</span>
+</span><span class='line'>    <span class="c1"># The following is not necessary because we use berkshelf</span>
+</span><span class='line'>    <span class="c1"># chef.cookbooks_path = &quot;cookbooks&quot;</span>
+</span><span class='line'>    <span class="n">chef</span><span class="o">.</span><span class="n">roles_path</span> <span class="o">=</span> <span class="s2">&quot;roles&quot;</span>
+</span><span class='line'>    <span class="n">chef</span><span class="o">.</span><span class="n">data_bags_path</span> <span class="o">=</span> <span class="s2">&quot;data_bags&quot;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># For now let&#39;s just install git to check that our chef provisioning is working</span>
+</span><span class='line'>    <span class="n">chef</span><span class="o">.</span><span class="n">add_recipe</span> <span class="s2">&quot;git&quot;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># We&#39;ll use the following later</span>
+</span><span class='line'>    <span class="c1"># chef.add_role &quot;web&quot; </span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<pre><code># For now let's just install git to check that our chef provisioning is working
-chef.add_recipe "git"
+Now we need to `vagrant reload` to make vagrant recreate a machine and install the required chef folders,
+then `vagrant provision` to make chef-solo install whatever is needed. A `vagrant ssh` followed by a `git --version`
+should help you verify that our chef provisionning worked.
 
-# We'll use the following later
-# chef.add_role "web" 
-</code></pre>
+You can see in our `Vagrantfile` above that we just asked chef-solo to run the `git` recipe.
+Looking at [git cookbook's documentation](http://community.opscode.com/cookbooks/git),
+we can see that this will run the `git::default` recipe of this cookbook, which should just install git.
 
-<p>  end
-end
-```</p>
+Let's remember that in the future running `vagrant provision` will rerun chef on our vm, so we'll
+be able to quickly test our changes in config.
 
-<p>Now we need to <code>vagrant reload</code> to make vagrant recreate a machine and install the required chef folders,
-then <code>vagrant provision</code> to make chef-solo install whatever is needed. A <code>vagrant ssh</code> followed by a <code>git --version</code>
-should help you verify that our chef provisionning worked.</p>
+## 5. Server and app configuration with chef
+I'll cover that in my next post.
 
-<p>You can see in our <code>Vagrantfile</code> above that we just asked chef-solo to run the <code>git</code> recipe.
-Looking at <a href="http://community.opscode.com/cookbooks/git">git cookbook's documentation</a>,
-we can see that this will run the <code>git::default</code> recipe of this cookbook, which should just install git.</p>
-
-<p>Let's remember that in the future running <code>vagrant provision</code> will rerun chef on our vm, so we'll
-be able to quickly test our changes in config.</p>
-
-<h2>5. Server and app configuration with chef</h2>
-
-<p>I'll cover that in my next post.</p>
-
-<h3>References</h3>
-
-<p><a href="http://www.slideshare.net/SmartLogic/practical-chef-and-capistrano-for-your-rails-app">Practical chef and capistrano for your rails app</a></p>
+### References
+[Practical chef and capistrano for your rails app](http://www.slideshare.net/SmartLogic/practical-chef-and-capistrano-for-your-rails-app)
 ]]></content>
   </entry>
   

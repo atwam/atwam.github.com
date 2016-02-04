@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Merimee | Atwam]]></title>
+  <title><![CDATA[Category: merimee | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/merimee/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-06-11T08:34:34+01:00</updated>
+  <updated>2016-02-04T00:53:48+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -18,78 +18,88 @@
     <link href="http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/"/>
     <updated>2012-02-25T21:16:00+00:00</updated>
     <id>http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests</id>
-    <content type="html"><![CDATA[<p>So it all started when I asked a friend to test this new app I'm building :
-"On your main page, <em>garantee</em>. You should really check your spelling, people will know you are French !".</p>
+    <content type="html"><![CDATA[So it all started when I asked a friend to test this new app I'm building :
+"On your main page, *garantee*. You should really check your spelling, people will know you are French !".
 
-<p>So here I went, naively googling for "website spell checker", with either pricey reports or simple websites
-where I'd have to copy-paste my text from all my pages. Then, I found <a href="http://afterthedeadline.com/">AfterTheDeadline</a>.
-It looks great, open-source, recently bought by wordpress.com, and they even provide an API.</p>
+So here I went, naively googling for "website spell checker", with either pricey reports or simple websites
+where I'd have to copy-paste my text from all my pages. Then, I found [AfterTheDeadline](http://afterthedeadline.com/).
+It looks great, open-source, recently bought by wordpress.com, and they even provide an API.
 
-<p>So, spent my evening doing stuff, and here we are with a new gem : <a href="https://rubygems.org/gems/merimee">Merimee</a> (<a href="http://github.com/atwam/merimee/">github</a>).</p>
-
+So, spent my evening doing stuff, and here we are with a new gem : [Merimee](https://rubygems.org/gems/merimee) ([github](http://github.com/atwam/merimee/)).
 <!-- more -->
+## What does it do ?
 
+It gives you some rspec macros to test your views spelling, and fails your tests if it finds errors.
 
-<h2>What does it do ?</h2>
+## Install
 
-<p>It gives you some rspec macros to test your views spelling, and fails your tests if it finds errors.</p>
+So here we are with our existing rails project. Installation is very easy :
 
-<h2>Install</h2>
+<figure class='code'><figcaption><span>Gemfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># :require =&gt; false is mandatory, or the gem may not hook properly into rspec</span>
+</span><span class='line'><span class="n">gem</span> <span class="s1">&#39;merimee&#39;</span><span class="p">,</span> <span class="ss">:group</span> <span class="o">=&gt;</span> <span class="ss">:test</span><span class="p">,</span> <span class="ss">:require</span> <span class="o">=&gt;</span> <span class="kp">false</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>So here we are with our existing rails project. Installation is very easy :</p>
+<figure class='code'><figcaption><span>spec_helper.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Spork</span><span class="o">.</span><span class="n">prefork</span> <span class="k">do</span>
+</span><span class='line'>  <span class="c1">#...</span>
+</span><span class='line'>  <span class="nb">require</span> <span class="s1">&#39;merimee&#39;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>``` ruby Gemfile</p>
+<figure class='code'><figcaption><span>spec/views/splash/index.html_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">describe</span> <span class="s2">&quot;splash/index&quot;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">it_should_have_a_correct_spelling</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<h1>:require => false is mandatory, or the gem may not hook properly into rspec</h1>
+And voilà, your test should still be green, or fail if there's a spelling error :
 
-<p>gem 'merimee', :group => :test, :require => false
-```</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='rbcon'><span class='line'><span class="go">Failures:</span>
+</span><span class='line'>
+</span><span class='line'><span class="go">  1) splash/index should have a correct spelling</span>
+</span><span class='line'><span class="go">     Failure/Error: rendered.should have_a_correct_spelling</span>
+</span><span class='line'><span class="go">      [error : spelling - Spelling] garantee (suggested: guarantee)</span>
+</span><span class='line'><span class="go">      [error : spelling - Spelling] faq (suggested: far, fat, fan, fax, fad)</span>
+</span><span class='line'><span class="go">     # /Users/wam/Dev/merimee/lib/merimee/rspec/view_checker_helper.rb:27:in `block in it_should_have_a_correct_spelling&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="go">Finished in 1.84 seconds</span>
+</span><span class='line'><span class="go">1 example, 1 failure</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p><code>ruby spec_helper.rb
-Spork.prefork do
-  #...
-  require 'merimee'
-end
-</code></p>
-
-<p><code>ruby spec/views/splash/index.html_spec.rb
-describe "splash/index" do
-  it_should_have_a_correct_spelling
-end
-</code></p>
-
-<p>And voilà, your test should still be green, or fail if there's a spelling error :</p>
-
-<p>```rbcon
-Failures:</p>
-
-<p>  1) splash/index should have a correct spelling
-     Failure/Error: rendered.should have_a_correct_spelling
-      [error : spelling - Spelling] garantee (suggested: guarantee)
-      [error : spelling - Spelling] faq (suggested: far, fat, fan, fax, fad)
-     # /Users/wam/Dev/merimee/lib/merimee/rspec/view_checker_helper.rb:27:in `block in it_should_have_a_correct_spelling'</p>
-
-<p>Finished in 1.84 seconds
-1 example, 1 failure
-```</p>
-
-<p>Have a look at the <a href="https://github.com/atwam/merimee">readme</a> to see how you can configure the gem :
+Have a look at the [readme](https://github.com/atwam/merimee) to see how you can configure the gem :
 you can choose which errors make your test fail, and configure your own dictionary to ignore some
-spelling errors.</p>
+spelling errors.
 
-<h2>Warning</h2>
+## Warning
 
-<p>Since AtD server will reject your requests if they are too close from each other, the macro has a nasty <code>sleep 0.7</code> to make
+Since AtD server will reject your requests if they are too close from each other, the macro has a nasty `sleep 0.7` to make
 sure it doesn't happen. If you find a better solution, send me a pull request. You may want to have these tests only run
-in some test groups.</p>
+in some test groups.
 
-<h2>Planned features ?</h2>
+## Planned features ?
 
-<p>Oh, I have a few ideas : add a rake task with a full report, for all views, including both errors (spelling etc.) and warnings (grammar warnings
-generated by AtD, like repetitions, double negations etc.
-I want to enable merimee in Test::Case as well, but I'm not so used to it.</p>
+Oh, I have a few ideas : add a rake task with a full report, for all views, including both errors (spelling etc.) and warnings (grammar warnings
+generated by AtD, like repetitions, double negations etc. 
+I want to enable merimee in Test::Case as well, but I'm not so used to it.
 
-<p>Feel free to fork and send me your pull requests, or just point any issue you have.</p>
+Feel free to fork and send me your pull requests, or just point any issue you have.
 ]]></content>
   </entry>
   

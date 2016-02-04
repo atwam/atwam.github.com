@@ -4,7 +4,7 @@
   <title><![CDATA[Atwam]]></title>
   <link href="http://blog.atwam.com/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-06-11T08:34:34+01:00</updated>
+  <updated>2016-02-04T00:53:48+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -14,17 +14,519 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Motorbike Prices]]></title>
+    <link href="http://blog.atwam.com/blog/2016/02/03/motorbike-prices-part-1/"/>
+    <updated>2016-02-03T20:13:00+00:00</updated>
+    <id>http://blog.atwam.com/blog/2016/02/03/motorbike-prices-part-1</id>
+    <content type="html"><![CDATA[<p>Being a <em>data scientist</em> (yup, that what we are called nowadays, apparently we are all the rage) and looking for my first bike to buy made me think (a lot) about what ride wanted.</p>
+
+<p>Hundreds of pages on various forums talking about which bike is good, which one is better, reliability, position, torque, sound, etc etc.
+Yet in the end, once you have set your mind on one or two models, you still have dozens (if not hundreds) of classifieds for these models, and it is sometime hard to know whether the price is fair, a good deal, or an overpriced deal.</p>
+
+<p>So, having lots of time on my hands at the moment, I started taking a quantitative approach.</p>
+
+<ul>
+<li>Step 1 : Get all the data (or as much as I can).</li>
+<li>Step 2 : Analysis, model</li>
+<li>Step 3 : Profit (now that I have a model, I can know whether any ad is a good deal or not).</li>
+</ul>
+
+
+<h1>Step 1 : Get all the data</h1>
+
+<p>The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the &ldquo;wanted&rdquo;) posts, and with more than 200cc. I&rsquo;m not claiming the data is perfect, far from it, but if you know a better source, let me know.</p>
+
+<p>As you can see below, I gathered prices and information for 15,505 bikes.</p>
+
+<h1>Step 2 : Analysis</h1>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">libs<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;data.table&#39;</span><span class="p">,</span><span class="s">&#39;knitr&#39;</span><span class="p">,</span><span class="s">&#39;ggplot2&#39;</span><span class="p">,</span><span class="s">&#39;stringr&#39;</span><span class="p">,</span><span class="s">&#39;pander&#39;</span><span class="p">,</span><span class="s">&#39;dplyr&#39;</span><span class="p">,</span><span class="s">&#39;lubridate&#39;</span><span class="p">)</span>
+<span class="kp">invisible</span><span class="p">(</span><span class="kp">lapply</span><span class="p">(</span>libs<span class="p">,</span> <span class="kn">require</span><span class="p">,</span> character.only<span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span>
+
+data <span class="o">=</span> fread<span class="p">(</span><span class="s">&#39;~/Dev/autoray/out.csv&#39;</span><span class="p">)</span>
+
+data <span class="o">=</span> <span class="kp">within</span><span class="p">(</span>data<span class="p">,</span> <span class="p">{</span>
+  cc <span class="o">=</span> <span class="kp">as.integer</span><span class="p">(</span>cc<span class="p">)</span>
+  cc<span class="p">[</span>cc <span class="o">&gt;</span> <span class="m">4000</span><span class="p">]</span> <span class="o">=</span> <span class="kc">NA</span>
+  seller_type <span class="o">=</span> <span class="kp">as.factor</span><span class="p">(</span>seller_type<span class="p">)</span>
+  <span class="kt">category</span> <span class="o">=</span> <span class="kp">as.factor</span><span class="p">(</span><span class="kp">category</span><span class="p">)</span>
+  year <span class="o">=</span> <span class="kp">as.integer</span><span class="p">(</span>year<span class="p">)</span>
+  year<span class="p">[</span>year <span class="o">&gt;</span> <span class="m">2016</span> <span class="o">|</span> year <span class="o">&lt;</span> <span class="m">1915</span><span class="p">]</span> <span class="o">=</span> <span class="kc">NA</span>
+  mileage <span class="o">=</span> <span class="kp">as.integer</span><span class="p">(</span>mileage<span class="p">)</span>
+  age <span class="o">=</span> <span class="m">2016</span> <span class="o">-</span> year
+  title <span class="o">=</span> str_to_lower<span class="p">(</span>title<span class="p">)</span>
+  description <span class="o">=</span> str_to_lower<span class="p">(</span>description<span class="p">)</span>
+  search <span class="o">=</span> <span class="kp">paste</span><span class="p">(</span>title<span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">,</span> description<span class="p">)</span>
+  abs <span class="o">=</span> str_detect<span class="p">(</span><span class="kp">search</span><span class="p">,</span> <span class="s">&#39;abs&#39;</span><span class="p">)</span>
+  panniers <span class="o">=</span> str_detect<span class="p">(</span><span class="kp">search</span><span class="p">,</span> <span class="s">&#39;panniers&#39;</span><span class="p">)</span>
+  ad_age <span class="o">=</span> <span class="kp">as.integer</span><span class="p">(</span><span class="kp">Sys.time</span><span class="p">()</span> <span class="o">-</span> parse_date_time<span class="p">(</span>str_extract<span class="p">(</span><span class="kp">url</span><span class="p">,</span> <span class="s">&quot;20\\d{6}&quot;</span><span class="p">),</span> <span class="s">&#39;Ymd&#39;</span><span class="p">))</span>
+  ad_age<span class="p">[</span>ad_age <span class="o">&gt;</span> <span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">NA</span> <span class="c1"># Let&#39;s ignore all ads older than 2 years for ad_age</span>
+<span class="p">})</span></code></pre></div>
+
+
+<p>Let&rsquo;s have a look at our data :</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>data<span class="p">[,</span><span class="kp">sapply</span><span class="p">(</span>data<span class="p">,</span> <span class="kp">is.numeric</span><span class="p">),</span> with<span class="o">=</span><span class="kc">FALSE</span><span class="p">])</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">##      price          distance          year         mileage      
+##  Min.   :  500   Min.   :  1.0   Min.   :1926   Min.   :     1  
+##  1st Qu.: 4137   1st Qu.: 54.0   1st Qu.:2008   1st Qu.:  2000  
+##  Median : 6000   Median :114.0   Median :2012   Median :  7266  
+##  Mean   : 6857   Mean   :116.7   Mean   :2010   Mean   : 10844  
+##  3rd Qu.: 8695   3rd Qu.:168.0   3rd Qu.:2015   3rd Qu.: 15900  
+##  Max.   :55950   Max.   :445.0   Max.   :2016   Max.   :333902  
+##                                  NA&#39;s   :521    NA&#39;s   :1832    
+##        cc             ad_age            age        
+##  Min.   : 191.0   Min.   :  3.00   Min.   : 0.000  
+##  1st Qu.: 650.0   1st Qu.: 33.75   1st Qu.: 1.000  
+##  Median : 900.0   Median : 99.00   Median : 4.000  
+##  Mean   : 921.3   Mean   :133.55   Mean   : 5.573  
+##  3rd Qu.:1170.0   3rd Qu.:182.00   3rd Qu.: 8.000  
+##  Max.   :3072.0   Max.   :730.00   Max.   :90.000  
+##  NA&#39;s   :19       NA&#39;s   :2011     NA&#39;s   :521</code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>data<span class="p">[,</span><span class="o">!</span><span class="kp">sapply</span><span class="p">(</span>data<span class="p">,</span> <span class="kp">is.numeric</span><span class="p">),</span> with<span class="o">=</span><span class="kc">FALSE</span><span class="p">])</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">##     title              brand                   seller_type    category 
+##  Length:17043       Length:17043       Private seller:  558    :16950  
+##  Class :character   Class :character   Trade seller  :16485   C:   57  
+##  Mode  :character   Mode  :character                          D:   36  
+##                                                                        
+##      url            description         panniers          abs         
+##  Length:17043       Length:17043       Mode :logical   Mode :logical  
+##  Class :character   Class :character   FALSE:16123     FALSE:13347    
+##  Mode  :character   Mode  :character   TRUE :920       TRUE :3696     
+##                                        NA&#39;s :0         NA&#39;s :0        
+##     search         
+##  Length:17043      
+##  Class :character  
+##  Mode  :character  
+##</code></pre></div>
+
+
+<p>Here are the factors I managed to get to explain the prices.</p>
+
+<ul>
+<li><em>cc</em>: The engine size, in cc</li>
+<li><em>seller_type</em> : Whether the ad was posted by a private or a trade seller</li>
+<li><em>category</em> : Whether the bike is in an insurance category (that is, a totaled bike).</li>
+<li><em>year</em> : Year of registration of the bike</li>
+<li><em>mileage</em> : Mileage, duh</li>
+<li><em>title</em>, <em>description</em>, <em>search</em> : Plain text about the bike, used to add some other factors or infer the brand, model, etc.</li>
+<li><em>abs</em>, <em>panniers</em> : I look for these words in the titles, description. Not perfect, especially because I look them as strings, not as words. So a description about an <em>abs</em>olute steal would match an <em>abs</em>. Yeah, that sucks, but I haven&rsquo;t had the time to research what NLP tools R offers for stemming.</li>
+<li><em>ad_age</em> : The age of the ad, calculated from a time stamp in the url. This one actually gets lots of =N/A=, because some urls are for ads and don&rsquo;t show the timestamp.</li>
+</ul>
+
+
+<h1>Step 2 : Analysis</h1>
+
+<h2>Impact of the age on the price</h2>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span><span class="kp">category</span><span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-3-1.png" alt="center" /></p>
+
+<p>What can we see on this graph ?</p>
+
+<ul>
+<li>Prices go down almost linearly during the first 15 years.</li>
+<li>After that, you can expect prices to remain kind-of stable for bikes which are just about to become vintage.</li>
+<li>Motorbikes more than 30 years old start to see a constant rise in value.</li>
+<li>Cat C and Cat D bikes have a value that is constantly lower than the value of non-category motorbikes. They decrease in value steadily.</li>
+</ul>
+
+
+<p>Now, let&rsquo;s focus on bikes which are less than 15 years old, not in a category.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">data <span class="o">=</span> <span class="kp">subset</span><span class="p">(</span>data<span class="p">,</span> age <span class="o">&lt;=</span> <span class="m">15</span> <span class="o">&amp;</span> <span class="kt">category</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">)</span></code></pre></div>
+
+
+<p>We can evaluate this discount :</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>lm<span class="p">(</span>price <span class="o">~</span> age<span class="p">,</span> data<span class="p">))</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">## 
+## Call:
+## lm(formula = price ~ age, data = data)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -8461  -2020   -479   1308  47431 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  8961.18      40.13  223.28   &lt;2e-16 ***
+## age          -442.60       6.81  -64.99   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3236 on 15503 degrees of freedom
+## Multiple R-squared:  0.2141, Adjusted R-squared:  0.2141 
+## F-statistic:  4224 on 1 and 15503 DF,  p-value: &lt; 2.2e-16</code></pre></div>
+
+
+<p>We see whe should expect a loss of value of £442/year, but it makes more sense to assume this loss in value should be a percentage of the original value, which would be <code>442/8961</code>, or about 5%/year for the first 15 years.</p>
+
+<h2>Impact of brands</h2>
+
+<p>As a first approximation, we can take the first word of the ad title to get the brand. Brands that use several words will be trimmed, but that should be good enough for now.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">data<span class="o">$</span>brand <span class="o">=</span> <span class="kp">as.factor</span><span class="p">(</span>word<span class="p">(</span>data<span class="o">$</span>title<span class="p">))</span>
+brands <span class="o">=</span> data <span class="o">%&gt;%</span> group_by<span class="p">(</span>brand<span class="p">)</span> <span class="o">%&gt;%</span> tally<span class="p">()</span>
+big_brands <span class="o">=</span> <span class="kp">droplevels</span><span class="p">(</span>brands<span class="p">[</span>n <span class="o">&gt;</span> <span class="m">200</span><span class="p">]</span><span class="o">$</span>brand<span class="p">)</span>
+data<span class="o">$</span>big_brand <span class="o">=</span> data<span class="o">$</span>brand <span class="o">%in%</span> big_brands
+ggplot<span class="p">(</span>data<span class="p">[</span>data<span class="o">$</span>big_brand<span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>brand<span class="p">),</span> se <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-6-1.png" alt="center" /></p>
+
+<p>Here we can see not only the difference in average price between brands (be careful, I haven&rsquo;t distinguished between models here), but also how these decay with time.</p>
+
+<p>We can see that Harleys are consistently more expensive, but seem to hold their value relative to other bikes quite well. Ducatis see a sharp drop at around 5 years.
+BMW are more expensive than the other brands as well in their first 7 years or so, but then drop in price to be actually cheaper than other brands. My guess is that because they are more expensive, they tend to be favoured by people able to buy them new, but the second-hand market for them isn&rsquo;t that great.</p>
+
+<h2>Engine size</h2>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>cc<span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-7-1.png" alt="center" /></p>
+
+<p>Not much to see here by default, we can just see that the price of a bike grows (almost linearly) with the engine size. That is until 1800cc (Goldwings), then beyond 2000cc you enter the realm of the Rocket III which is just less expensive than the goldwing.</p>
+
+<h2>Mileage</h2>
+
+<p>Some bikes seem to have crazy mileage (300k), so let&rsquo;s stick to stuff with reasonable values, less than 100k.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span><span class="kp">subset</span><span class="p">(</span>data<span class="p">,</span> mileage <span class="o">&lt;</span> <span class="m">100000</span><span class="p">))</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>mileage<span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-8-1.png" alt="center" /></p>
+
+<p>Big surprise, the price drops as the mileage increase. The effect seems almost linear to start with, then seems to decay. We can probably work with a linear decay for the first 25k, beyond that it just makes sense to use a log decay&hellip;</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>lm<span class="p">(</span>price <span class="o">~</span> mileage<span class="p">,</span> <span class="kp">subset</span><span class="p">(</span>data<span class="p">,</span> mileage <span class="o">&lt;</span> <span class="m">25000</span><span class="p">)))</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">## 
+## Call:
+## lm(formula = price ~ mileage, data = subset(data, mileage &lt; 25000))
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -7708  -2237   -612   1667  47778 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  8.208e+03  4.409e+01  186.18   &lt;2e-16 ***
+## mileage     -1.569e-01  4.401e-03  -35.65   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3349 on 12764 degrees of freedom
+## Multiple R-squared:  0.09055,    Adjusted R-squared:  0.09048 
+## F-statistic:  1271 on 1 and 12764 DF,  p-value: &lt; 2.2e-16</code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>lm<span class="p">(</span>price <span class="o">~</span> <span class="kp">log</span><span class="p">(</span><span class="m">1</span> <span class="o">+</span> mileage<span class="p">),</span> data<span class="p">))</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">## 
+## Call:
+## lm(formula = price ~ log(1 + mileage), data = data)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -8961  -2347   -603   1613  48229 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)       9715.54      91.98   105.6   &lt;2e-16 ***
+## log(1 + mileage)  -366.54      10.97   -33.4   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3370 on 14061 degrees of freedom
+##   (1442 observations deleted due to missingness)
+## Multiple R-squared:  0.0735, Adjusted R-squared:  0.07344 
+## F-statistic:  1115 on 1 and 14061 DF,  p-value: &lt; 2.2e-16</code></pre></div>
+
+
+<p>What we can see here is that the price of the bike seems to drop by 0.1569 per mile, or £156/1000miles.
+Translating again to a percentage of the intercept, we get 0.0190058 or about 1.9% per 1000 miles.</p>
+
+<p>This figure could depend on the brand quite heavily (and more importantly on the type/model) of bike. You&rsquo;d expect tourers, VFRs and R1200RT to hold their value with mileage a lot better than some shiny supersport bikes. We&rsquo;ll have a look at that in another post.</p>
+
+<h2>Mileage + age</h2>
+
+<p>Mileage and age are obviously very (read 0.6531262 = 65%) correlated, so we&rsquo;ll have to use both in our price regression.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><span class="kp">summary</span><span class="p">(</span>lm<span class="p">(</span>price <span class="o">~</span> age <span class="o">*</span> <span class="kp">log</span><span class="p">(</span><span class="m">1</span><span class="o">+</span>mileage<span class="p">),</span> <span class="kp">subset</span><span class="p">(</span>data<span class="p">,</span> mileage <span class="o">&lt;</span> <span class="m">100000</span><span class="p">)))</span></code></pre></div>
+
+
+
+
+<div class="highlight"><pre><code class="language-text" data-lang="text">## 
+## Call:
+## lm(formula = price ~ age * log(1 + mileage), data = subset(data, 
+##     mileage &lt; 1e+05))
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -7869  -1921   -400   1292  47533 
+## 
+## Coefficients:
+##                      Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)          8325.324     98.211  84.770  &lt; 2e-16 ***
+## age                    -3.961     45.923  -0.086    0.931    
+## log(1 + mileage)       62.846     13.223   4.753 2.02e-06 ***
+## age:log(1 + mileage)  -45.364      4.654  -9.748  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3075 on 14055 degrees of freedom
+## Multiple R-squared:  0.2289, Adjusted R-squared:  0.2287 
+## F-statistic:  1390 on 3 and 14055 DF,  p-value: &lt; 2.2e-16</code></pre></div>
+
+
+<p>We can pretty much ignore the coef in front of age (low tstat), we get something that is roughly :
+$ price = 8325 + logMileage * (62 - 45 * age) $</p>
+
+<h2>Are private seller cheaper than trade sellers ?</h2>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span>seller_type<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-11-1.png" alt="center" /></p>
+
+<p>The answer seems consistently <em>yes</em> !</p>
+
+<h2>Do good deals go quickly ?</h2>
+
+<p>It seems intuitive to think that good deals will be sold quickly, and the longer an ad has been there, the more likely it is that the bike is above its market price. Trade sellers and their automated posting software would skew the results, by having software that refreshes ads every-so-often, but we should still see some effect.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>ad_age<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">,</span><span class="m">30</span><span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-12-1.png" alt="center" /></p>
+
+<p>So <em>yes</em>, our intuition holds, it looks like the average price for new ads is around £1000 less than for ads that are 2 months old.
+There is a bias here, because many ads for new models are put by dealers and left forever.
+Let&rsquo;s run the query again, this time only looking a bikes which are more than 2 years old, and comparing dealers/private sellers.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">[</span>age <span class="o">&gt;=</span> <span class="m">2</span><span class="p">])</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>ad_age<span class="p">,</span> color<span class="o">=</span>seller_type<span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">365</span><span class="o">*</span><span class="m">2</span><span class="p">,</span><span class="m">30</span><span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-13-1.png" alt="center" /></p>
+
+<p>What we can see here is still that good deals move quickly, and this difference is even more pronounced for private sellers than it is for dealers. An ad that has been out for two months is on average £1000 more expensive than the one that will get sold within its first few days.</p>
+
+<p>We&rsquo;ll see in a next post whether it still holds when looking at data for one single model.</p>
+
+<h2>ABS</h2>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>age<span class="p">,</span> color<span class="o">=</span><span class="kp">abs</span><span class="p">))</span> <span class="o">+</span> scale_x_continuous<span class="p">(</span>breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="m">90</span><span class="p">,</span><span class="m">10</span><span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-14-1.png" alt="center" /></p>
+
+<p>Well, we can see that ABS definitely seems to keep its increased price, at least for recent bikes. One has to be careful though, because ABS is usually found on higher end bikes, so this difference in price could just be a bias. One would have to do a price comparison for a specific model (with enough data).</p>
+
+<h2>Distance to london</h2>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r">ggplot<span class="p">(</span>data<span class="p">)</span> <span class="o">+</span> geom_smooth<span class="p">(</span>aes<span class="p">(</span>y<span class="o">=</span>price<span class="p">,</span> x<span class="o">=</span>distance<span class="p">))</span></code></pre></div>
+
+
+<p><img src="http://blog.atwam.com/figs/2015-02-03-motorbike-prices-part-1/unnamed-chunk-15-1.png" alt="center" /></p>
+
+<p>Hard to say anything here. Could be some bias from big cities that appear at some distance from London. Given we don&rsquo;t have the postcode for all ads, it&rsquo;s hard to go beyond this useless graph.</p>
+
+<h1>Conclusion</h1>
+
+<p>I&rsquo;ve only looked at a few things, and it seems obvious here that many results are probably biased given I&rsquo;m not filtering to a specific model.</p>
+
+<p>Next time, I&rsquo;ll look at the most frequent bike of the most frequent brand, and we&rsquo;ll see if these results still hold. Plus yeah, we&rsquo;ll have a first look at our pricing model and try to find some underpriced bikes.</p>
+
+<p>Stay tuned (and feel free to guess what model we&rsquo;ll be looking at in the comments, or let me know if you&rsquo;d be interested in another specific analysis).</p>
+
+<p><em>I&rsquo;d like to get some data on insurance as well, but it&rsquo;s a lot harder to gather. If you know a way, let me know&hellip;</em></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[From pow to a deployed rails app using chef, capistrano and vagrant - Part 3]]></title>
+    <link href="http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box/"/>
+    <updated>2013-06-12T08:47:00+01:00</updated>
+    <id>http://blog.atwam.com/blog/2013/06/12/adding-an-app-server-to-our-box</id>
+    <content type="html"><![CDATA[<p>Now that we have a server running our database, we want to make it also able to run our rails app.
+As I said in the previous post, I could use the full <code>application</code> cookbook, but I&rsquo;d have to create my
+own cookbook and recipe to use that properly. For now, I&rsquo;ll just rely on <code>rackbox</code> (and its dependency <code>appbox</code>).</p>
+
+<h2>Managing with <code>appbox</code></h2>
+
+<p>The <code>appbox</code> cookbook does pretty much the stuff that we configured earlier (setting up users etc). Since it&rsquo;s a dependency of <code>rackbox</code>,
+we are pretty much forced to use it (<code>rackbox</code> does call <code>appbox</code> default recipe).</p>
+
+<p>Having added <code>appbox</code> to our <code>Berksfile</code>, I had to modify the <code>roles/base.rb</code> :</p>
+
+<ul>
+<li>Let app box know that my admin user name is wam.</li>
+<li>Generate a ssh key for to login as the deploy user.</li>
+<li>Make sure the app box recipe is run before I run my <code>sudo</code> and <code>users::sysadmins</code> recipe.</li>
+</ul>
+
+
+<p>We&rsquo;ll start by creating the deploy key :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ssh-keygen -t rsa -C <span class="s2">&quot;wam@scube&quot;</span> -f ~/.ssh/scube_deploy_rsa
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>roles/base.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">name</span> <span class="s2">&quot;base&quot;</span>
+</span><span class='line'><span class="n">description</span> <span class="s2">&quot;Base role applied to all nodes.&quot;</span>
+</span><span class='line'><span class="n">run_list</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[apt]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[build-essential]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[git]&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;appbox&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[users::sysadmins]&quot;</span><span class="p">,</span> <span class="c1"># Necessary to run after appbox to add our stuff</span>
+</span><span class='line'>  <span class="s2">&quot;recipe[sudo]&quot;</span> <span class="c1"># Same</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'><span class="n">override_attributes</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;appbox&quot;</span>  <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="s2">&quot;deploy_keys&quot;</span> <span class="o">=&gt;</span> <span class="o">[</span>
+</span><span class='line'>      <span class="s2">&quot;ssh-rsa [...]&quot;</span> <span class="c1"># content of ~/.ssh/scube_deploy_rsa.pub</span>
+</span><span class='line'>    <span class="o">]</span><span class="p">,</span>
+</span><span class='line'>    <span class="s2">&quot;admin_user&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;wam&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Adding a rack server</h2>
+
+<p>I&rsquo;ve chosen to use passenger + nginx, which is a popular choice among the rails community. I was tempted for a moment by puma on jruby, but I want
+my app online faster and will bother changing this kind of thing later (chef makes it easy to test new nodes with new recipes..)</p>
+
+<p>Let&rsquo;s create a <code>roles/app_server.rb</code> :</p>
+
+<figure class='code'><figcaption><span>roles/app_server.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">name</span> <span class="s2">&quot;app_server&quot;</span>
+</span><span class='line'><span class="n">description</span> <span class="s2">&quot;Serving http requests for the app. Main app server&quot;</span>
+</span><span class='line'><span class="n">run_list</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;rackbox&quot;</span>
+</span><span class='line'><span class="p">)</span>
+</span><span class='line'><span class="n">override_attributes</span><span class="p">(</span>
+</span><span class='line'>  <span class="s2">&quot;rackbox&quot;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="s2">&quot;ruby&quot;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;versions&quot;</span><span class="o">=&gt;</span> <span class="o">[</span><span class="s2">&quot;1.9.3-p385&quot;</span><span class="o">]</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;global&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;1.9.3-p385&quot;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="s2">&quot;apps&quot;</span><span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;passenger&quot;</span><span class="o">=&gt;</span> <span class="o">[</span>
+</span><span class='line'>        <span class="p">{</span><span class="s2">&quot;appname&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;scube&quot;</span><span class="p">,</span> <span class="s2">&quot;hostname&quot;</span><span class="o">=&gt;</span> <span class="s2">&quot;my.hostname.com&quot;</span><span class="p">}</span>
+</span><span class='line'>      <span class="o">]</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now to make it work with vagrant, two changes are necessary in our <code>Vagrantfile</code> :</p>
+
+<ul>
+<li>We need to make sure that the <code>chef</code> version we are using is 11 or more. By default my vagrant was using chef 10, and the <code>rackbox</code>
+(more specifically the <code>runit</code> it uses) was throwing an error (NameError: Cannot find a resource for load_new_resource_state on ubuntu version 12.04).</li>
+<li>We add a port mapping to access the http port of our server on <code>localhost:8888</code></li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Stuff here</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:forwarded_port</span><span class="p">,</span> <span class="ss">guest</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="ss">host</span><span class="p">:</span> <span class="mi">8888</span>
+</span><span class='line'><span class="c1"># Put this line just before your config.vm.provision :chef_solo line</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:shell</span><span class="p">,</span> <span class="ss">:inline</span> <span class="o">=&gt;</span> <span class="s2">&quot;gem install chef --version 11.4.2 --no-rdoc --no-ri --conservative&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>:shell</code> provision makes sure that vagrant updates the chef gem before actually running our <code>chef-solo</code> provision.
+Now it&rsquo;s on to <code>vagrant provision</code>, stuff should appear in green and <a href="http://localhost:8888">http://localhost:8888</a> should show a 404 error.
+Yes of course, we haven&rsquo;t deployed our app yet. That&rsquo;ll be next.</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[From pow to a deployed rails app using chef, capistrano and vagrant - Part 2]]></title>
     <link href="http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers/"/>
     <updated>2013-06-10T23:03:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2013/06/10/configuring-chef-solo-for-our-servers</id>
-    <content type="html"><![CDATA[<p>Now that we have our vagrant box working with chef, let&#8217;s use chef to configure our services and our app.</p>
+    <content type="html"><![CDATA[<p>Now that we have our vagrant box working with chef, let&rsquo;s use chef to configure our services and our app.</p>
 
 <h2>Chef roles</h2>
 
-<p>Assuming that you have read some basics about chef, you&#8217;ll know that the cookbooks we have downloaded provide recipes for installing various software.
-We could ask vagrant to install a few recipes, but it&#8217;s probably better to assemble them in roles.
-We&#8217;ll then assign the roles to one or several nodes, or use all of them on our box for testing.</p>
+<p>Assuming that you have read some basics about chef, you&rsquo;ll know that the cookbooks we have downloaded provide recipes for installing various software.
+We could ask vagrant to install a few recipes, but it&rsquo;s probably better to assemble them in roles.
+We&rsquo;ll then assign the roles to one or several nodes, or use all of them on our box for testing.</p>
 
 <p>For now, we probably want to have one <code>base</code> role (to install common software on all our nodes) and two roles to serve our application :</p>
 
@@ -41,13 +543,13 @@ We&#8217;ll then assign the roles to one or several nodes, or use all of them on
 <p>We want our base role to include the following :</p>
 
 <ul>
-<li><em>apt</em>, <em>git</em>, <em>sudo</em> and <em>build-essential</em> should be installed. We&#8217;ll use the default cookbooks/recipes for each of these.</li>
-<li><em>users setup</em> : Should create the users (with their ssh key), give them sudo rights. We&#8217;ll use the <code>users</code> cookbook.</li>
+<li><em>apt</em>, <em>git</em>, <em>sudo</em> and <em>build-essential</em> should be installed. We&rsquo;ll use the default cookbooks/recipes for each of these.</li>
+<li><em>users setup</em> : Should create the users (with their ssh key), give them sudo rights. We&rsquo;ll use the <code>users</code> cookbook.</li>
 </ul>
 
 
 <p>We start by editing our <code>Berksfile</code> to make sure all the cookbooks are included (<code>sudo</code>, <code>apt</code>, <code>git</code>, <code>build-essential</code>, <code>users</code>).
-Then let&#8217;s create a role file.</p>
+Then let&rsquo;s create a role file.</p>
 
 <figure class='code'><figcaption><span>roles/base.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -70,13 +572,13 @@ Then let&#8217;s create a role file.</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p><em>The order matters here !</em> <em>apt</em> should appear first (it&#8217;s used to handle packages), <em>build-essential</em> is used by pretty much
+<p><em>The order matters here !</em> <em>apt</em> should appear first (it&rsquo;s used to handle packages), <em>build-essential</em> is used by pretty much
 everything, and especially by <code>ruby-shadow</code> which is a gem dependency of <code>users</code>.</p>
 
 <p>Reading <a href="http://community.opscode.com/cookbooks/users">the documentation of the users cookbook</a>, we see that we should define the users in a data bag
 (a way of telling chef about some data, list, including potentially encrypted password and ssh keys).</p>
 
-<p>Chef solo doesn&#8217;t work very well with data bags (or the CLI doesn&#8217;t work very well), so we&#8217;ll just create the file manually.
+<p>Chef solo doesn&rsquo;t work very well with data bags (or the CLI doesn&rsquo;t work very well), so we&rsquo;ll just create the file manually.
 Also, we see in the users cookbook that it requires <code>chef-solo-search</code> to run with chef-solo.</p>
 
 <p>Adding <code>cookbook 'chef-solo-search', git: "https://github.com/edelight/chef-solo-search.git"</code> to our <code>Berksfile</code> should be good enough.</p>
@@ -121,7 +623,7 @@ Also, we see in the users cookbook that it requires <code>chef-solo-search</code
 
 <p>Now we need to modify our <code>Vagrantfile</code> to use this role (and not the dummy git recipe we were using). An extra bit of precaution is needed here :
 the <code>sudo</code> cookbook/recipe will install <code>sudo</code> qnd configure it by default for the sysadmin group (lucky us, our user is a member).
-<em>It will override vagrant&#8217;s sudo config, breaking vagrant provision using chef-solo</em>. To avoid that, we use vagrant&#8217;s <code>chef.json</code> config
+<em>It will override vagrant&rsquo;s sudo config, breaking vagrant provision using chef-solo</em>. To avoid that, we use vagrant&rsquo;s <code>chef.json</code> config
 to override the <code>sudo</code> configuration attributes for vagrant :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -145,18 +647,18 @@ to override the <code>sudo</code> configuration attributes for vagrant :</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Then it&#8217;s on to <code>vagrant provision</code>, and ssh to whatever port was forwarded to 22 (for me it was <code>ssh localhost -p 2222</code>) to see that you log in
+<p>Then it&rsquo;s on to <code>vagrant provision</code>, and ssh to whatever port was forwarded to 22 (for me it was <code>ssh localhost -p 2222</code>) to see that you log in
 using your ssh key.</p>
 
-<p>If you hit a json parsing exception when chef reads your user json file, make sure you don&#8217;t have trailing commas.
+<p>If you hit a json parsing exception when chef reads your user json file, make sure you don&rsquo;t have trailing commas.
 You can check your JSON easily in <code>irb</code> using <code>require 'json'; JSON.parse(File.read('data_bags/users/wam.json'))</code>.</p>
 
-<h3>Creating a custom cookbook &#8230;</h3>
+<h3>Creating a custom cookbook &hellip;</h3>
 
-<p>There&#8217;s a big choice to do here. We could either create a whole separate cookbook just for our app, configured with many
+<p>There&rsquo;s a big choice to do here. We could either create a whole separate cookbook just for our app, configured with many
 default recipes, or for now just use an already created one.</p>
 
-<p>It is very likely that I&#8217;ll have to create a cookbook at some point, because it&#8217;s the only way to have your own recipes
+<p>It is very likely that I&rsquo;ll have to create a cookbook at some point, because it&rsquo;s the only way to have your own recipes
 and reach a high enough level of customization.</p>
 
 <h3>.. or use and existing one</h3>
@@ -167,12 +669,12 @@ It will probably make sense to use <code>database</code> and <code>application</
 and your own cookbook/recipes.</p>
 
 <p><code>rackbox</code> includes <code>appbox</code> by default, which creates its own users for deployment/app running.
-I have found that these cookbooks are a bit limited for my taste (for example, they don&#8217;t use data_bags, which are a proper way of encrypting
-password instead of storing them in your chef repository&#8230; Well, next time.</p>
+I have found that these cookbooks are a bit limited for my taste (for example, they don&rsquo;t use data_bags, which are a proper way of encrypting
+password instead of storing them in your chef repository&hellip; Well, next time.</p>
 
 <h2>Setting up our roles</h2>
 
-<p>Let&#8217;s start by adding the cookbooks to our <code>Berksfile</code> and run <code>berks install</code></p>
+<p>Let&rsquo;s start by adding the cookbooks to our <code>Berksfile</code> and run <code>berks install</code></p>
 
 <figure class='code'><figcaption><span>Berksfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -183,10 +685,10 @@ password instead of storing them in your chef repository&#8230; Well, next time.
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>and create our <code>roles/database_master.rb</code>. We are using non encrypted passwords here, which isn&#8217;t very secure.
-We should actually use encrypted data bags, but they don&#8217;t play very nicely with roles (they are supposed to be used with recipes, which
-would mean custom cookbook), nor do they play nicely with <code>knife solo</code> (although a plugin exist, but it didn&#8217;t work very well
-in my tests). Let&#8217;s start this way, we&#8217;ll see later to move to a more robust non solo chef.</p>
+<p>and create our <code>roles/database_master.rb</code>. We are using non encrypted passwords here, which isn&rsquo;t very secure.
+We should actually use encrypted data bags, but they don&rsquo;t play very nicely with roles (they are supposed to be used with recipes, which
+would mean custom cookbook), nor do they play nicely with <code>knife solo</code> (although a plugin exist, but it didn&rsquo;t work very well
+in my tests). Let&rsquo;s start this way, we&rsquo;ll see later to move to a more robust non solo chef.</p>
 
 <figure class='code'><figcaption><span>roles/database_master.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -241,10 +743,10 @@ the <code>myapp</code> database. We can test that in <code>vagrant ssh</code></p
 </span></code></pre></td></tr></table></div></figure>
 
 
-<h2>What&#8217;s next</h2>
+<h2>What&rsquo;s next</h2>
 
-<p>Next post will be about configuring a proper rails box using <code>rackbox</code>, setting up capistrano to deploy &#8230; then deploy to a vps and get closer to production.
-I&#8217;m still not entirely happy with this deployment today. I should move to a proper cookbook, as I said, to get more customization options.
+<p>Next post will be about configuring a proper rails box using <code>rackbox</code>, setting up capistrano to deploy &hellip; then deploy to a vps and get closer to production.
+I&rsquo;m still not entirely happy with this deployment today. I should move to a proper cookbook, as I said, to get more customization options.
 For now, I want my app out, and will probably work a bit more later depending on how successful it is. The beauty of chef, after all, is that it makes
 it easy to set up new nodes and new deployments.</p>
 
@@ -260,14 +762,14 @@ it easy to set up new nodes and new deployments.</p>
     <updated>2013-05-14T19:51:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2013/05/14/using-rspec-with-inherited-resources-helpers-and-inherited-views</id>
     <content type="html"><![CDATA[<p>I have updated a rails app I have been working on recently to a more recent version of rails 3.2, and all my tests where failing.
-Finally managed to have that working, figured I&#8217;d show how.</p>
+Finally managed to have that working, figured I&rsquo;d show how.</p>
 
 <h3>Mocking inherited_resources helpers in views specs.</h3>
 
-<p>I know I shouldn&#8217;t be using <a href="https://github.com/josevalim/inherited_resources"><code>inherited_resources</code></a> anymore (<a href="http://stackoverflow.com/questions/9599201/inherited-resources-deperecated-on-rails-3-responders">see here</a> and <a href="http://archives.ryandaigle.com/articles/2009/8/10/what-s-new-in-edge-rails-default-restful-rendering">here</a>) but I want to release my app before I change everything to use responders.</p>
+<p>I know I shouldn&rsquo;t be using <a href="https://github.com/josevalim/inherited_resources"><code>inherited_resources</code></a> anymore (<a href="http://stackoverflow.com/questions/9599201/inherited-resources-deperecated-on-rails-3-responders">see here</a> and <a href="http://archives.ryandaigle.com/articles/2009/8/10/what-s-new-in-edge-rails-default-restful-rendering">here</a>) but I want to release my app before I change everything to use responders.</p>
 
-<p>So, my tests where failing because I was using the <code>resource</code>, <code>collection</code> and <code>resource_class</code> helpers from some views I was using. So first my tests are failing because <code>resource_class</code> isn&#8217;t available in my views. I would have thought that the controller helpers were available in the views, but they aren&#8217;t.
-The solution is easy. Let&#8217;s add the following to our <code>spec/support</code> directory :</p>
+<p>So, my tests where failing because I was using the <code>resource</code>, <code>collection</code> and <code>resource_class</code> helpers from some views I was using. So first my tests are failing because <code>resource_class</code> isn&rsquo;t available in my views. I would have thought that the controller helpers were available in the views, but they aren&rsquo;t.
+The solution is easy. Let&rsquo;s add the following to our <code>spec/support</code> directory :</p>
 
 <figure class='code'><figcaption><span>spec/support/view_resource_macros.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -475,9 +977,9 @@ Now the next issue is that our edit and new views are shared, but we still want 
 
 
 <p>This was <a href="https://github.com/rails/rails/issues/5213">raised as an issue to the rails team</a>, but they commented (rightly I think) that the inheritance
-is related to the controller, not the views, so the test case shouldn&#8217;t know about it and you&#8217;ll have to declare it manually using the lines above.</p>
+is related to the controller, not the views, so the test case shouldn&rsquo;t know about it and you&rsquo;ll have to declare it manually using the lines above.</p>
 
-<p>Now let&#8217;s go back and make these tests green again.</p>
+<p>Now let&rsquo;s go back and make these tests green again.</p>
 ]]></content>
   </entry>
   
@@ -486,22 +988,22 @@ is related to the controller, not the views, so the test case shouldn&#8217;t kn
     <link href="http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/"/>
     <updated>2013-04-27T22:09:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo</id>
-    <content type="html"><![CDATA[<p>So, let&#8217;s be honest, I&#8217;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
-But now I have this new shinny application that I don&#8217;t want to deploy using Heroku :</p>
+    <content type="html"><![CDATA[<p>So, let&rsquo;s be honest, I&rsquo;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
+But now I have this new shinny application that I don&rsquo;t want to deploy using Heroku :</p>
 
 <ul>
-<li>Because I am worried that if I start with Heroku, I&#8217;ll be too lazy to switch later.</li>
-<li>Because I know that at some point, my application is going to need plugins and binaries that I can&#8217;t get on Heroku.</li>
-<li>Because I&#8217;d rather have a portable application that I can deploy easily on any type of server.</li>
+<li>Because I am worried that if I start with Heroku, I&rsquo;ll be too lazy to switch later.</li>
+<li>Because I know that at some point, my application is going to need plugins and binaries that I can&rsquo;t get on Heroku.</li>
+<li>Because I&rsquo;d rather have a portable application that I can deploy easily on any type of server.</li>
 </ul>
 
 
-<!-- more -->
+<!--more-->
 
 
 <h2>1. Planning and strategy</h2>
 
-<p>I have this nice application, let&#8217;s call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous <a href="http://pow.cx">pow</a>.</p>
+<p>I have this nice application, let&rsquo;s call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous <a href="http://pow.cx">pow</a>.</p>
 
 <p>My goal is to have :</p>
 
@@ -516,21 +1018,21 @@ But now I have this new shinny application that I don&#8217;t want to deploy usi
 So, the plan is the following :</p>
 
 <ol>
-<li>Install <code>vagrant</code>, that I&#8217;ll use to launch virtualized servers to test my chef configuration.</li>
+<li>Install <code>vagrant</code>, that I&rsquo;ll use to launch virtualized servers to test my chef configuration.</li>
 <li>Prepare a chef configuration for two roles : app server and database server.
-I&#8217;ll start by having the same machine (in vagrant for now) running the two roles, knowing that I&#8217;ll be able to split that to more servers if I need to scale.</li>
+I&rsquo;ll start by having the same machine (in vagrant for now) running the two roles, knowing that I&rsquo;ll be able to split that to more servers if I need to scale.</li>
 <li>Setup capistrano on my rails app to have it deploy nicely to my machines.</li>
 </ol>
 
 
 <h2>2. Vagrant for testing locally the server configuration</h2>
 
-<p>Well, it&#8217;ll be short. Head over to <a href="http://www.vagrantup.com">vagrant&#8217;s website</a> where its marvelous developper has done a very complete getting-started guide.
-Once installed (and don&#8217;t forget to install virtualbox too), I&#8217;m pretty much following it.
-I&#8217;ll chose the <code>precise64</code> box, an ubuntu 64 bits image, but you can of course choose another box found <a href="http://www.vagrantbox.es/">here</a></p>
+<p>Well, it&rsquo;ll be short. Head over to <a href="http://www.vagrantup.com">vagrant&rsquo;s website</a> where its marvelous developper has done a very complete getting-started guide.
+Once installed (and don&rsquo;t forget to install virtualbox too), I&rsquo;m pretty much following it.
+I&rsquo;ll chose the <code>precise64</code> box, an ubuntu 64 bits image, but you can of course choose another box found <a href="http://www.vagrantbox.es/">here</a></p>
 
-<p>I&#8217;ll start by creating a directory that will hold our deployment related configuration : vagrant and chef&#8217;s config.
-I have chosen to have this directory separate from my application&#8217;s directory.</p>
+<p>I&rsquo;ll start by creating a directory that will hold our deployment related configuration : vagrant and chef&rsquo;s config.
+I have chosen to have this directory separate from my application&rsquo;s directory.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -541,7 +1043,7 @@ I have chosen to have this directory separate from my application&#8217;s direct
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Then let&#8217;s edit our <code>Vagrantfile</code> to change a few defaults to better suit us :</p>
+<p>Then let&rsquo;s edit our <code>Vagrantfile</code> to change a few defaults to better suit us :</p>
 
 <figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -556,16 +1058,16 @@ I have chosen to have this directory separate from my application&#8217;s direct
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>We just start the box with <code>vagrant up</code> and check that we manage to connect to it using <code>vagrant ssh</code>. It&#8217;s working, great, we have a blank slate to work on !</p>
+<p>We just start the box with <code>vagrant up</code> and check that we manage to connect to it using <code>vagrant ssh</code>. It&rsquo;s working, great, we have a blank slate to work on !</p>
 
 <h2>3. Chef in the kitchen</h2>
 
 <p><a href="http://www.opscode.com/chef/">Chef</a> will be used to handle the configuration/bootstrapping of my servers.
-I&#8217;ve done my fair share of playing with ssh in the past, only to realize that administering a server for a side project using ssh is fun until
+I&rsquo;ve done my fair share of playing with ssh in the past, only to realize that administering a server for a side project using ssh is fun until
 you have to come back to it after a few months and remember where all the things are and where you should do you change.</p>
 
-<p>With chef, the configuration is stored on git, and if I need to change anything, there&#8217;s only one place to go.
-Soooo, let&#8217;s start.</p>
+<p>With chef, the configuration is stored on git, and if I need to change anything, there&rsquo;s only one place to go.
+Soooo, let&rsquo;s start.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -592,9 +1094,9 @@ Soooo, let&#8217;s start.</p>
 It may be a bit more complicated than that, just look at <a href="http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/">this blog post</a> if you have issues installing the gems above.</p>
 
 <p>That should cover the installation of the main <code>chef</code> gem and of <code>knife-solo</code>. Chef can be configured to use with a chef server (useful to manage many machines)
-but for now I&#8217;ll be using <code>knife-solo</code> (also known as chef-solo) which should be good enough.</p>
+but for now I&rsquo;ll be using <code>knife-solo</code> (also known as chef-solo) which should be good enough.</p>
 
-<p>Now let&#8217;s initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.</p>
+<p>Now let&rsquo;s initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>knife solo init . <span class="c"># Creates the chef-repo here</span>
@@ -606,7 +1108,7 @@ Opscode has gathered many cookbooks contributed by the community.
 The standard way of installing these cookbook is through <code>knife cookbook site install blah</code>, but I have included the <a href="http://berkshelf.com/">berkshelf</a> gem which will handle
 our <code>cookbooks</code> directory for us and get all the proper cookbooks and their dependencies. The list of cookbooks is managed in a <code>Berksfile</code>.</p>
 
-<p>For now, let&#8217;s start by installing some cookbooks. We&#8217;ll see later to configure them and our app.</p>
+<p>For now, let&rsquo;s start by installing some cookbooks. We&rsquo;ll see later to configure them and our app.</p>
 
 <figure class='code'><figcaption><span>Berksfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -627,19 +1129,18 @@ our <code>cookbooks</code> directory for us and get all the proper cookbooks and
 
 <p>A few comments on these cookbooks ..</p>
 
-<p>apt
-: Used to make sure this package manager is installed on the ubuntu box that we&#8217;ll be using.</p>
+<dl>
+<dt>apt</dt>
+<dd>Used to make sure this package manager is installed on the ubuntu box that we&rsquo;ll be using.</dd>
+<dt>build-essential</dt>
+<dd>Make sure we can build stuff. This one will be included anyway since it&rsquo;s a dependency of for many other packages.</dd>
+<dt><a href="http://community.opscode.com/cookbooks/nginx">nginx</a></dt>
+<dd>Planning to use this lightweight web server to serve our rails app</dd>
+<dt><a href="http://community.opscode.com/cookbooks/database">database</a></dt>
+<dd>This cookbook is an alternative to the <a href="http://community.opscode.com/cookbooks/postgresql"><code>postgresql</code></a>. It can install mysql or postgresql and should allow us later to use a master/slave configuration.</dd>
+</dl>
 
-<p>build-essential
-: Make sure we can build stuff. This one will be included anyway since it&#8217;s a dependency of for many other packages.</p>
-
-<p><a href="http://community.opscode.com/cookbooks/nginx">nginx</a>
-: Planning to use this lightweight web server to serve our rails app</p>
-
-<p><a href="http://community.opscode.com/cookbooks/database">database</a>
-: This cookbook is an alternative to the <a href="http://community.opscode.com/cookbooks/postgresql"><code>postgresql</code></a>. It can install mysql or postgresql and should allow us later to use a master/slave configuration.</p>
-
-<p>Now let&#8217;s make sure these cookbooks are there and available :</p>
+<p>Now let&rsquo;s make sure these cookbooks are there and available :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>berks install
@@ -648,18 +1149,18 @@ our <code>cookbooks</code> directory for us and get all the proper cookbooks and
 
 <h2>4. Make vagrant use chef</h2>
 
-<p>Now we&#8217;ll need to make vagrant use our chef cookbooks and recives, so that we&#8217;ll be able to test our chef configuration.
-For now we&#8217;ll just make sure it installs correctly a simple recipe (git, for example). We&#8217;ll cover the proper configuration
+<p>Now we&rsquo;ll need to make vagrant use our chef cookbooks and recives, so that we&rsquo;ll be able to test our chef configuration.
+For now we&rsquo;ll just make sure it installs correctly a simple recipe (git, for example). We&rsquo;ll cover the proper configuration
 of our servers in a later post.</p>
 
-<p>Since we are using berkshelf to manage our cookbooks, we&#8217;d better use the <code>vagrant-berkshelf</code> plugin :</p>
+<p>Since we are using berkshelf to manage our cookbooks, we&rsquo;d better use the <code>vagrant-berkshelf</code> plugin :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>vagrant plugin install vagrant-berkshelf
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Now let&#8217;s add a few lines in our <code>Vagrantfile</code> :</p>
+<p>Now let&rsquo;s add a few lines in our <code>Vagrantfile</code> :</p>
 
 <figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -703,15 +1204,15 @@ then <code>vagrant provision</code> to make chef-solo install whatever is needed
 should help you verify that our chef provisionning worked.</p>
 
 <p>You can see in our <code>Vagrantfile</code> above that we just asked chef-solo to run the <code>git</code> recipe.
-Looking at <a href="http://community.opscode.com/cookbooks/git">git cookbook&#8217;s documentation</a>,
+Looking at <a href="http://community.opscode.com/cookbooks/git">git cookbook&rsquo;s documentation</a>,
 we can see that this will run the <code>git::default</code> recipe of this cookbook, which should just install git.</p>
 
-<p>Let&#8217;s remember that in the future running <code>vagrant provision</code> will rerun chef on our vm, so we&#8217;ll
+<p>Let&rsquo;s remember that in the future running <code>vagrant provision</code> will rerun chef on our vm, so we&rsquo;ll
 be able to quickly test our changes in config.</p>
 
 <h2>5. Server and app configuration with chef</h2>
 
-<p>I&#8217;ll cover that in my next post.</p>
+<p>I&rsquo;ll cover that in my next post.</p>
 
 <h3>References</h3>
 
@@ -728,7 +1229,7 @@ be able to quickly test our changes in config.</p>
 The issue is that having xcode installed which configures <code>clang</code> as the default compiler, some native gems break.</p>
 
 <p>It took me some time, but at long least I can now build a native gem using <code>gcc</code> instead of <code>clang</code> on mac os x.
-And you&#8217;ll see it&#8217;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
+And you&rsquo;ll see it&rsquo;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
 
 <!-- more -->
 
@@ -751,7 +1252,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 <p><code>gem install dep_selector</code> fails with compilation errors by clang.</p>
 
 <ul>
-<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that&#8217;d be ugly.</li>
+<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that&rsquo;d be ugly.</li>
 <li>Second solution : manually build the extension and let rubygems know that our gem is installed.</li>
 </ul>
 
@@ -767,7 +1268,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Now let&#8217;s edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).</p>
+<p>Now let&rsquo;s edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -778,7 +1279,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>And let&#8217;s recreate the <code>Makefile</code> and build our extension.</p>
+<p>And let&rsquo;s recreate the <code>Makefile</code> and build our extension.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -793,7 +1294,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 
 <p>We can check that the compilation worked, because there is now a <code>dep_gecode.bundle</code> file.
 Now we need to let the gem system know that our gem is added.
-<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we&#8217;ll have to copy the gemspec. The following should do the trick :</p>
+<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we&rsquo;ll have to copy the gemspec. The following should do the trick :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -818,7 +1319,7 @@ Now we need to let the gem system know that our gem is added.
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>That&#8217;s it, now we can move on and work on our chef install.</p>
+<p>That&rsquo;s it, now we can move on and work on our chef install.</p>
 ]]></content>
   </entry>
   
@@ -827,7 +1328,7 @@ Now we need to let the gem system know that our gem is added.
     <link href="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/"/>
     <updated>2012-05-11T23:20:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data</id>
-    <content type="html"><![CDATA[<p>I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
+    <content type="html"><![CDATA[<p>I haven&rsquo;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
 
 <h3>The problem</h3>
 
@@ -835,7 +1336,7 @@ Now we need to let the gem system know that our gem is added.
 For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
 and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
 
-<p>So, you start thinking that hey, you&#8217;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
+<p>So, you start thinking that hey, you&rsquo;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
 You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
 
 <p><em>You typically use configurations if you want to store different entities in
@@ -849,33 +1350,33 @@ You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <
  by configuration. When you are creating your configurations, though, remember
  that you cannot create cross-store relationships.</em></p>
 
-<p>Well, that&#8217;s pretty much all the doc you&#8217;ll get from apple.
+<p>Well, that&rsquo;s pretty much all the doc you&rsquo;ll get from apple.
 There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
 <a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
-but not in a clear enough form for me. So, here&#8217;s how it works&#8230;</p>
+but not in a clear enough form for me. So, here&rsquo;s how it works&hellip;</p>
 
 <!-- more -->
 
 
 <h3>Models</h3>
 
-<p>We want to have two separate models (because that&#8217;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
-Let&#8217;s create two models in xcode (I&#8217;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
+<p>We want to have two separate models (because that&rsquo;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
+Let&rsquo;s create two models in xcode (I&rsquo;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
 
 <ul>
 <li>Our <em>UserModel</em> model has one entity <code>Rating</code> with two attributes : <code>postcode</code> (an <code>NSString</code>) and <code>rating</code> (an integer).</li>
-<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&#8217;s say some location and address attributes), and <code>Counties</code> that
+<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&rsquo;s say some location and address attributes), and <code>Counties</code> that
 which postcode belongs to which county.</li>
 </ul>
 
 
-<blockquote><p>We assume that we have already generated a &#8216;PostCodes.sqlite&#8217; using normal core data stuff, based on <code>PostCodesModel</code> only. That&#8217;s the seed file we&#8217;ll want to download.</p></blockquote>
+<blockquote><p>We assume that we have already generated a &lsquo;PostCodes.sqlite&rsquo; using normal core data stuff, based on <code>PostCodesModel</code> only. That&rsquo;s the seed file we&rsquo;ll want to download.</p></blockquote>
 
-<h3>How it&#8217;ll work</h3>
+<h3>How it&rsquo;ll work</h3>
 
-<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&#8217;ll need to merge our two models.
-We&#8217;ll create one configuration in each model, with the entities of this model.
-We&#8217;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
+<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&rsquo;ll need to merge our two models.
+We&rsquo;ll create one configuration in each model, with the entities of this model.
+We&rsquo;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
 uses the correct store for the correct entities.</p>
 
 <h3>Adding configurations.</h3>
@@ -924,13 +1425,13 @@ We do the same with a <em>PostCodesConf</em> configuration for our postcodes mod
 
 <h3>Creating a persistent store</h3>
 
-<p>That&#8217;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
-once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&#8217;t. When you add the first one (our postcodes data),
-it finds that the store (our downloaded sqlite file) wasn&#8217;t created with this model : we only used the <code>PostCodesModel</code> model to create
+<p>That&rsquo;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
+once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&rsquo;t. When you add the first one (our postcodes data),
+it finds that the store (our downloaded sqlite file) wasn&rsquo;t created with this model : we only used the <code>PostCodesModel</code> model to create
 our <em>.sqlite</em> file, not our merged model that we are now using.</p>
 
-<p>We could then think of using migration, but then the migrated model used by core data when migrating won&#8217;t have
-our <em>PostCodesConf</em> configuration anymore. <em>I think that&#8217;s a bug of core data</em>.
+<p>We could then think of using migration, but then the migrated model used by core data when migrating won&rsquo;t have
+our <em>PostCodesConf</em> configuration anymore. <em>I think that&rsquo;s a bug of core data</em>.
 The solution is to :</p>
 
 <ol>
@@ -939,7 +1440,7 @@ that his sqlite file has just some missing tables (the <em>UserModel</em> tables
 properly.</li>
 <li>Remove our newly created persistent store (he had a default configuration, we want him to use <em>UserConf</em>.</li>
 <li>Add the same persistent store again, which has now the correct metadata and can be used with our merged model.</li>
-<li>The user data sqlite file is usually fine, because it&#8217;s created with the merged model anyway when the app run.
+<li>The user data sqlite file is usually fine, because it&rsquo;s created with the merged model anyway when the app run.
 If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-data-and-plug-ins/">this plugin architecture</a></li>
 </ol>
 
@@ -1054,11 +1555,11 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
     <link href="http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests/"/>
     <updated>2012-02-25T21:16:00+00:00</updated>
     <id>http://blog.atwam.com/blog/2012/02/25/spell-checking-should-be-part-of-your-view-tests</id>
-    <content type="html"><![CDATA[<p>So it all started when I asked a friend to test this new app I&#8217;m building :
-&#8220;On your main page, <em>garantee</em>. You should really check your spelling, people will know you are French !&#8221;.</p>
+    <content type="html"><![CDATA[<p>So it all started when I asked a friend to test this new app I&rsquo;m building :
+&ldquo;On your main page, <em>garantee</em>. You should really check your spelling, people will know you are French !&rdquo;.</p>
 
-<p>So here I went, naively googling for &#8220;website spell checker&#8221;, with either pricey reports or simple websites
-where I&#8217;d have to copy-paste my text from all my pages. Then, I found <a href="http://afterthedeadline.com/">AfterTheDeadline</a>.
+<p>So here I went, naively googling for &ldquo;website spell checker&rdquo;, with either pricey reports or simple websites
+where I&rsquo;d have to copy-paste my text from all my pages. Then, I found <a href="http://afterthedeadline.com/">AfterTheDeadline</a>.
 It looks great, open-source, recently bought by wordpress.com, and they even provide an API.</p>
 
 <p>So, spent my evening doing stuff, and here we are with a new gem : <a href="https://rubygems.org/gems/merimee">Merimee</a> (<a href="http://github.com/atwam/merimee/">github</a>).</p>
@@ -1105,7 +1606,7 @@ It looks great, open-source, recently bought by wordpress.com, and they even pro
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>And voilà, your test should still be green, or fail if there&#8217;s a spelling error :</p>
+<p>And voilà, your test should still be green, or fail if there&rsquo;s a spelling error :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -1137,14 +1638,14 @@ spelling errors.</p>
 <h2>Warning</h2>
 
 <p>Since AtD server will reject your requests if they are too close from each other, the macro has a nasty <code>sleep 0.7</code> to make
-sure it doesn&#8217;t happen. If you find a better solution, send me a pull request. You may want to have these tests only run
+sure it doesn&rsquo;t happen. If you find a better solution, send me a pull request. You may want to have these tests only run
 in some test groups.</p>
 
 <h2>Planned features ?</h2>
 
 <p>Oh, I have a few ideas : add a rake task with a full report, for all views, including both errors (spelling etc.) and warnings (grammar warnings
 generated by AtD, like repetitions, double negations etc.
-I want to enable merimee in Test::Case as well, but I&#8217;m not so used to it.</p>
+I want to enable merimee in Test::Case as well, but I&rsquo;m not so used to it.</p>
 
 <p>Feel free to fork and send me your pull requests, or just point any issue you have.</p>
 ]]></content>

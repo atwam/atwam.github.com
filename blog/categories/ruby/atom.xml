@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ruby | Atwam]]></title>
   <link href="http://blog.atwam.com/blog/categories/ruby/atom.xml" rel="self"/>
   <link href="http://blog.atwam.com/"/>
-  <updated>2013-06-11T08:34:34+01:00</updated>
+  <updated>2016-02-04T00:53:48+00:00</updated>
   <id>http://blog.atwam.com/</id>
   <author>
     <name><![CDATA[Atwam]]></name>
@@ -18,78 +18,89 @@
     <link href="http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/"/>
     <updated>2013-04-25T23:13:00+01:00</updated>
     <id>http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x</id>
-    <content type="html"><![CDATA[<p>Just a quick post, having finally figured out how to install dep_selector on mac os x.
-The issue is that having xcode installed which configures <code>clang</code> as the default compiler, some native gems break.</p>
+    <content type="html"><![CDATA[Just a quick post, having finally figured out how to install dep\_selector on mac os x.
+The issue is that having xcode installed which configures `clang` as the default compiler, some native gems break.
 
-<p>It took me some time, but at long least I can now build a native gem using <code>gcc</code> instead of <code>clang</code> on mac os x.
-And you'll see it's not very easy to have ruby change its compiler for gems native extensions compilation.</p>
-
+It took me some time, but at long least I can now build a native gem using `gcc` instead of `clang` on mac os x.
+And you'll see it's not very easy to have ruby change its compiler for gems native extensions compilation.
 <!-- more -->
 
+## Installing gecode
 
-<h2>Installing gecode</h2>
+`brew install gecode` is supposed to be fine, but it failed for me. The solution was to use llvm :
 
-<p><code>brew install gecode</code> is supposed to be fine, but it failed for me. The solution was to use llvm :</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>brew install gecode --use-llvm
+</span></code></pre></td></tr></table></div></figure>
 
-<p><code>bash
-$ brew install gecode --use-llvm
-</code></p>
+## Install dep\_selector
 
-<h2>Install dep_selector</h2>
+`dep_selector` uses the standard `mkmf` to create the makefile that will be used to build the native extension for the gem.
+`mkmf` in turn uses `RbConfig`, which is defined in `rbconfig.rb` deep in your ruby source and was generated when your ruby was built.
+The issue is that this `rbconfig` hard codes the value of the `CC` variable that will be used in the `Makefile`.
 
-<p><code>dep_selector</code> uses the standard <code>mkmf</code> to create the makefile that will be used to build the native extension for the gem.
-<code>mkmf</code> in turn uses <code>RbConfig</code>, which is defined in <code>rbconfig.rb</code> deep in your ruby source and was generated when your ruby was built.
-The issue is that this <code>rbconfig</code> hard codes the value of the <code>CC</code> variable that will be used in the <code>Makefile</code>.</p>
+`gem install dep_selector` fails with compilation errors by clang.
 
-<p><code>gem install dep_selector</code> fails with compilation errors by clang.</p>
+* First solution : modify `rbconfig.rb` to use `ENV['CC']` if defined. Yeah, that'd be ugly.
+* Second solution : manually build the extension and let rubygems know that our gem is installed.
 
-<ul>
-<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that'd be ugly.</li>
-<li>Second solution : manually build the extension and let rubygems know that our gem is installed.</li>
-</ul>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd</span> <span class="nv">$GEM_HOME</span>/gems/dep_selector-0.0.8/ext/dep_gecode
+</span><span class='line'><span class="nv">$ </span><span class="c"># First let&#39;s confirm that this was built with the wrong compiler</span>
+</span><span class='line'><span class="nv">$ </span>grep clang Makefile
+</span><span class='line'><span class="nv">CC</span> <span class="o">=</span> clang
+</span></code></pre></td></tr></table></div></figure>
 
+Now let's edit the `extconf.rb`, adding the following line just before the last (`create_makefile()` thing).
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="sx">%w{CC CXX}</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">c</span><span class="o">|</span>
+</span><span class='line'>  <span class="no">RbConfig</span><span class="o">::</span><span class="no">MAKEFILE_CONFIG</span><span class="o">[</span><span class="n">c</span><span class="o">]</span> <span class="o">=</span> <span class="no">ENV</span><span class="o">[</span><span class="n">c</span><span class="o">]</span> <span class="k">if</span> <span class="no">ENV</span><span class="o">[</span><span class="n">c</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p><code>bash
-$ cd $GEM_HOME/gems/dep_selector-0.0.8/ext/dep_gecode
-$ # First let's confirm that this was built with the wrong compiler
-$ grep clang Makefile
-CC = clang
-</code></p>
+And let's recreate the `Makefile` and build our extension.
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ CC</span><span class="o">=</span>gcc <span class="nv">CXX</span><span class="o">=</span>g++ ruby extconf.rb
+</span><span class='line'><span class="nv">$ </span>grep CC Makefile <span class="c"># Should output gcc, great success !</span>
+</span><span class='line'><span class="nv">$ </span>make
+</span><span class='line'><span class="nv">$ </span>make install <span class="c"># This will copy the library so to a proper ruby directory</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Now let's edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).
-<code>ruby
-%w{CC CXX}.each do |c|
-  RbConfig::MAKEFILE_CONFIG[c] = ENV[c] if ENV[c]
-end
-</code></p>
+We can check that the compilation worked, because there is now a `dep_gecode.bundle` file.
+Now we need to let the gem system know that our gem is added. 
+[The manual for `gem install`](http://docs.rubygems.org/read/chapter/10#page33) tells us that we'll have to copy the gemspec. The following should do the trick :
 
-<p>And let's recreate the <code>Makefile</code> and build our extension.
-<code>bash
-$ CC=gcc CXX=g++ ruby extconf.rb
-$ grep CC Makefile # Should output gcc, great success !
-$ make
-$ make install # This will copy the library so to a proper ruby directory
-</code></p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd</span> <span class="nv">$GEM_HOME</span>/gems/dep_selector-0.0.8
+</span><span class='line'><span class="nv">$ </span>gem spec --local ../../cache/dep_selector-0.0.8.gem --ruby &gt; ../../specifications/dep_selector-0.0.8.gemspec
+</span><span class='line'><span class="nv">$ </span>gem list dep_selector
+</span><span class='line'>*** LOCAL GEMS ***
+</span><span class='line'>
+</span><span class='line'>dep_selector <span class="o">(</span>0.0.8<span class="o">)</span>
+</span><span class='line'><span class="nv">$ </span>irb
+</span><span class='line'>&gt;&gt; require <span class="s1">&#39;dep_selector&#39;</span>
+</span><span class='line'><span class="o">=</span>&gt; <span class="nb">true</span>
+</span><span class='line'>&gt;&gt; <span class="nb">exit</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>We can check that the compilation worked, because there is now a <code>dep_gecode.bundle</code> file.
-Now we need to let the gem system know that our gem is added.
-<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we'll have to copy the gemspec. The following should do the trick :</p>
-
-<p>```bash
-$ cd $GEM_HOME/gems/dep_selector-0.0.8
-$ gem spec --local ../../cache/dep_selector-0.0.8.gem --ruby > ../../specifications/dep_selector-0.0.8.gemspec
-$ gem list dep_selector
-<strong><em> LOCAL GEMS </em></strong></p>
-
-<p>dep_selector (0.0.8)
-$ irb</p>
-
-<blockquote><blockquote><p>require 'dep_selector'
-=> true
-exit
-```</p></blockquote></blockquote>
-
-<p>That's it, now we can move on and work on our chef install.</p>
+That's it, now we can move on and work on our chef install.
 ]]></content>
   </entry>
   

@@ -96,7 +96,7 @@ The issue is that having xcode installed which configures &hellip;">
   
 
 
-<time datetime="2013-04-25T23:13:00+01:00" pubdate data-updated="true">Apr 25<span>th</span>, 2013</time>
+<time datetime="2013-04-25T23:13:00+01:00" pubdate data-updated="true"></time>
         
       </p>
     
@@ -107,7 +107,7 @@ The issue is that having xcode installed which configures &hellip;">
 The issue is that having xcode installed which configures <code>clang</code> as the default compiler, some native gems break.</p>
 
 <p>It took me some time, but at long least I can now build a native gem using <code>gcc</code> instead of <code>clang</code> on mac os x.
-And you&#8217;ll see it&#8217;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
+And you&rsquo;ll see it&rsquo;s not very easy to have ruby change its compiler for gems native extensions compilation.</p>
 
 <!-- more -->
 
@@ -130,7 +130,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 <p><code>gem install dep_selector</code> fails with compilation errors by clang.</p>
 
 <ul>
-<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that&#8217;d be ugly.</li>
+<li>First solution : modify <code>rbconfig.rb</code> to use <code>ENV['CC']</code> if defined. Yeah, that&rsquo;d be ugly.</li>
 <li>Second solution : manually build the extension and let rubygems know that our gem is installed.</li>
 </ul>
 
@@ -146,7 +146,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Now let&#8217;s edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).</p>
+<p>Now let&rsquo;s edit the <code>extconf.rb</code>, adding the following line just before the last (<code>create_makefile()</code> thing).</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -157,7 +157,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>And let&#8217;s recreate the <code>Makefile</code> and build our extension.</p>
+<p>And let&rsquo;s recreate the <code>Makefile</code> and build our extension.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -172,7 +172,7 @@ The issue is that this <code>rbconfig</code> hard codes the value of the <code>C
 
 <p>We can check that the compilation worked, because there is now a <code>dep_gecode.bundle</code> file.
 Now we need to let the gem system know that our gem is added.
-<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we&#8217;ll have to copy the gemspec. The following should do the trick :</p>
+<a href="http://docs.rubygems.org/read/chapter/10#page33">The manual for <code>gem install</code></a> tells us that we&rsquo;ll have to copy the gemspec. The following should do the trick :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -197,7 +197,7 @@ Now we need to let the gem system know that our gem is added.
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>That&#8217;s it, now we can move on and work on our chef install.</p>
+<p>That&rsquo;s it, now we can move on and work on our chef install.</p>
 </div>
 
 
@@ -220,7 +220,7 @@ Now we need to let the gem system know that our gem is added.
   
 
 
-<time datetime="2013-04-25T23:13:00+01:00" pubdate data-updated="true">Apr 25<span>th</span>, 2013</time>
+<time datetime="2013-04-25T23:13:00+01:00" pubdate data-updated="true"></time>
       
 
 <span class="categories">
@@ -233,8 +233,6 @@ Now we need to let the gem system know that our gem is added.
     </p>
     
       <div class="sharing">
-  
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/" data-via="at_wam" data-counturl="http://blog.atwam.com/blog/2013/04/25/building-dep-selector-on-mac-os-x/" >Tweet</a>
   
   
   
@@ -267,6 +265,14 @@ Now we need to let the gem system know that our gem is added.
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/03/motorbike-prices-part-1/">Motorbike Prices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/12/adding-an-app-server-to-our-box/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 3</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/06/10/configuring-chef-solo-for-our-servers/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 2</a>
       </li>
     
@@ -276,14 +282,6 @@ Now we need to let the gem system know that our gem is added.
     
       <li class="post">
         <a href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Building dep_selector on mac os x</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Multiple persistent stores and seed data with core data</a>
       </li>
     
   </ul>
@@ -321,23 +319,6 @@ Now we need to let the gem system know that our gem is added.
 </section>
 
 
-<section>
-  <h1>Latest Tweets</h1>
-  <ul id="tweets">
-    <li class="loading">Status updating...</li>
-  </ul>
-  <script type="text/javascript">
-    $.domReady(function(){
-      getTwitterFeed("at_wam", 4, false);
-    });
-  </script>
-  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
-  
-    <a href="http://twitter.com/at_wam" class="twitter-follow-button" data-show-count="false">Follow @at_wam</a>
-  
-</section>
-
-
 
 
 
@@ -348,7 +329,7 @@ Now we need to let the gem system know that our gem is added.
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Atwam -
+  Copyright &copy; 2016 - Atwam -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

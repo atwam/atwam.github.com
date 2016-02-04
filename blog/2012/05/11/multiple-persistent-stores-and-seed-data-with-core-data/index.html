@@ -9,7 +9,7 @@
   <meta name="author" content="Atwam">
 
   
-  <meta name="description" content="I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go &hellip;">
+  <meta name="description" content="I haven&rsquo;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -95,14 +95,14 @@
   
 
 
-<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true">May 11<span>th</span>, 2012</time>
+<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true"></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>I haven&#8217;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
+<div class="entry-content"><p>I haven&rsquo;t posted anything for a while now, and after hours of trying to find a solution to my problem, I thought I should share. So here we go.</p>
 
 <h3>The problem</h3>
 
@@ -110,7 +110,7 @@
 For example, you want to have some (seeded) list of postcodes. The size of data is too big to be shipped with your app,
 and we assume that the model is too complex to be just filled by your application at runtime from a downloaded csv/txt file.</p>
 
-<p>So, you start thinking that hey, you&#8217;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
+<p>So, you start thinking that hey, you&rsquo;ll generate a sqlite database (<em>persistent data store</em> as they say), put it on a server and have your app download and use it.
 You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <code>NSPersistentStoreCoordinator</code> and <code>NSManagedObjectModel</code>) or, according to apple :</p>
 
 <p><em>You typically use configurations if you want to store different entities in
@@ -124,33 +124,33 @@ You can either duplicate the whole stack (<code>NSManagedObjectContext</code>, <
  by configuration. When you are creating your configurations, though, remember
  that you cannot create cross-store relationships.</em></p>
 
-<p>Well, that&#8217;s pretty much all the doc you&#8217;ll get from apple.
+<p>Well, that&rsquo;s pretty much all the doc you&rsquo;ll get from apple.
 There are a few mentions of this problem <a href="http://stackoverflow.com/questions/9970103/what-is-an-efficient-way-to-merge-two-ios-core-data-persistent-stores">there</a>
 <a href="http://stackoverflow.com/questions/10224016/coredata-with-multiple-stores-configuration-woes">or there</a>
-but not in a clear enough form for me. So, here&#8217;s how it works&#8230;</p>
+but not in a clear enough form for me. So, here&rsquo;s how it works&hellip;</p>
 
 <!-- more -->
 
 
 <h3>Models</h3>
 
-<p>We want to have two separate models (because that&#8217;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
-Let&#8217;s create two models in xcode (I&#8217;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
+<p>We want to have two separate models (because that&rsquo;s the way it is, or because your seed data can be used in apps that have nothing to do with this one).
+Let&rsquo;s create two models in xcode (I&rsquo;ll be using dumb <em>Model</em>, <em>Conf</em> suffixes just to help understanding) :</p>
 
 <ul>
 <li>Our <em>UserModel</em> model has one entity <code>Rating</code> with two attributes : <code>postcode</code> (an <code>NSString</code>) and <code>rating</code> (an integer).</li>
-<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&#8217;s say some location and address attributes), and <code>Counties</code> that
+<li>Our <em>PostCodesModel</em> model has two entities <code>Postcode</code> (with a <code>postcode</code> attribute, and let&rsquo;s say some location and address attributes), and <code>Counties</code> that
 which postcode belongs to which county.</li>
 </ul>
 
 
-<blockquote><p>We assume that we have already generated a &#8216;PostCodes.sqlite&#8217; using normal core data stuff, based on <code>PostCodesModel</code> only. That&#8217;s the seed file we&#8217;ll want to download.</p></blockquote>
+<blockquote><p>We assume that we have already generated a &lsquo;PostCodes.sqlite&rsquo; using normal core data stuff, based on <code>PostCodesModel</code> only. That&rsquo;s the seed file we&rsquo;ll want to download.</p></blockquote>
 
-<h3>How it&#8217;ll work</h3>
+<h3>How it&rsquo;ll work</h3>
 
-<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&#8217;ll need to merge our two models.
-We&#8217;ll create one configuration in each model, with the entities of this model.
-We&#8217;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
+<p>Since we can only have one model for one <code>NSPersistentStoreCoordinator</code>, we&rsquo;ll need to merge our two models.
+We&rsquo;ll create one configuration in each model, with the entities of this model.
+We&rsquo;ll then add two <code>NSPersistentStore</code>, one per <code>.sqlite</code> file, and with a configuration set up to make sure that core data
 uses the correct store for the correct entities.</p>
 
 <h3>Adding configurations.</h3>
@@ -199,13 +199,13 @@ We do the same with a <em>PostCodesConf</em> configuration for our postcodes mod
 
 <h3>Creating a persistent store</h3>
 
-<p>That&#8217;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
-once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&#8217;t. When you add the first one (our postcodes data),
-it finds that the store (our downloaded sqlite file) wasn&#8217;t created with this model : we only used the <code>PostCodesModel</code> model to create
+<p>That&rsquo;s where the difficulty is. One would think that just calling <code>addPersistentStoreWithType:configuration:URL:options:error</code>
+once per <em>.sqlite</em> file with the correct configuration would be enough. It isn&rsquo;t. When you add the first one (our postcodes data),
+it finds that the store (our downloaded sqlite file) wasn&rsquo;t created with this model : we only used the <code>PostCodesModel</code> model to create
 our <em>.sqlite</em> file, not our merged model that we are now using.</p>
 
-<p>We could then think of using migration, but then the migrated model used by core data when migrating won&#8217;t have
-our <em>PostCodesConf</em> configuration anymore. <em>I think that&#8217;s a bug of core data</em>.
+<p>We could then think of using migration, but then the migrated model used by core data when migrating won&rsquo;t have
+our <em>PostCodesConf</em> configuration anymore. <em>I think that&rsquo;s a bug of core data</em>.
 The solution is to :</p>
 
 <ol>
@@ -214,7 +214,7 @@ that his sqlite file has just some missing tables (the <em>UserModel</em> tables
 properly.</li>
 <li>Remove our newly created persistent store (he had a default configuration, we want him to use <em>UserConf</em>.</li>
 <li>Add the same persistent store again, which has now the correct metadata and can be used with our merged model.</li>
-<li>The user data sqlite file is usually fine, because it&#8217;s created with the merged model anyway when the app run.
+<li>The user data sqlite file is usually fine, because it&rsquo;s created with the merged model anyway when the app run.
 If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-data-and-plug-ins/">this plugin architecture</a></li>
 </ol>
 
@@ -343,7 +343,7 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
   
 
 
-<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true">May 11<span>th</span>, 2012</time>
+<time datetime="2012-05-11T23:20:00+01:00" pubdate data-updated="true"></time>
       
 
 <span class="categories">
@@ -356,8 +356,6 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
     </p>
     
       <div class="sharing">
-  
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/" data-via="at_wam" data-counturl="http://blog.atwam.com/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/" >Tweet</a>
   
   
   
@@ -390,6 +388,14 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/03/motorbike-prices-part-1/">Motorbike Prices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/12/adding-an-app-server-to-our-box/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 3</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/06/10/configuring-chef-solo-for-our-servers/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 2</a>
       </li>
     
@@ -399,14 +405,6 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
     
       <li class="post">
         <a href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Building dep_selector on mac os x</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Multiple persistent stores and seed data with core data</a>
       </li>
     
   </ul>
@@ -444,23 +442,6 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
 </section>
 
 
-<section>
-  <h1>Latest Tweets</h1>
-  <ul id="tweets">
-    <li class="loading">Status updating...</li>
-  </ul>
-  <script type="text/javascript">
-    $.domReady(function(){
-      getTwitterFeed("at_wam", 4, false);
-    });
-  </script>
-  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
-  
-    <a href="http://twitter.com/at_wam" class="twitter-follow-button" data-show-count="false">Follow @at_wam</a>
-  
-</section>
-
-
 
 
 
@@ -471,7 +452,7 @@ If not, you could think of using <a href="http://www.cimgf.com/2009/05/03/core-d
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Atwam -
+  Copyright &copy; 2016 - Atwam -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

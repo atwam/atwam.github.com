@@ -9,7 +9,7 @@
   <meta name="author" content="Atwam">
 
   
-  <meta name="description" content="So, let&#8217;s be honest, I&#8217;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant &hellip;">
+  <meta name="description" content="So, let&rsquo;s be honest, I&rsquo;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -95,29 +95,29 @@
   
 
 
-<time datetime="2013-04-27T22:09:00+01:00" pubdate data-updated="true">Apr 27<span>th</span>, 2013</time>
+<time datetime="2013-04-27T22:09:00+01:00" pubdate data-updated="true"></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>So, let&#8217;s be honest, I&#8217;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
-But now I have this new shinny application that I don&#8217;t want to deploy using Heroku :</p>
+<div class="entry-content"><p>So, let&rsquo;s be honest, I&rsquo;ve been quite lazy here. My latest rails application was deployed with Heroku. Lots of fun, a very pleasant experience.
+But now I have this new shinny application that I don&rsquo;t want to deploy using Heroku :</p>
 
 <ul>
-<li>Because I am worried that if I start with Heroku, I&#8217;ll be too lazy to switch later.</li>
-<li>Because I know that at some point, my application is going to need plugins and binaries that I can&#8217;t get on Heroku.</li>
-<li>Because I&#8217;d rather have a portable application that I can deploy easily on any type of server.</li>
+<li>Because I am worried that if I start with Heroku, I&rsquo;ll be too lazy to switch later.</li>
+<li>Because I know that at some point, my application is going to need plugins and binaries that I can&rsquo;t get on Heroku.</li>
+<li>Because I&rsquo;d rather have a portable application that I can deploy easily on any type of server.</li>
 </ul>
 
 
-<!-- more -->
+<!--more-->
 
 
 <h2>1. Planning and strategy</h2>
 
-<p>I have this nice application, let&#8217;s call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous <a href="http://pow.cx">pow</a>.</p>
+<p>I have this nice application, let&rsquo;s call it cube. So far it has lived very happily in rails dev environment, run only by the marvelous <a href="http://pow.cx">pow</a>.</p>
 
 <p>My goal is to have :</p>
 
@@ -132,21 +132,21 @@ But now I have this new shinny application that I don&#8217;t want to deploy usi
 So, the plan is the following :</p>
 
 <ol>
-<li>Install <code>vagrant</code>, that I&#8217;ll use to launch virtualized servers to test my chef configuration.</li>
+<li>Install <code>vagrant</code>, that I&rsquo;ll use to launch virtualized servers to test my chef configuration.</li>
 <li>Prepare a chef configuration for two roles : app server and database server.
-I&#8217;ll start by having the same machine (in vagrant for now) running the two roles, knowing that I&#8217;ll be able to split that to more servers if I need to scale.</li>
+I&rsquo;ll start by having the same machine (in vagrant for now) running the two roles, knowing that I&rsquo;ll be able to split that to more servers if I need to scale.</li>
 <li>Setup capistrano on my rails app to have it deploy nicely to my machines.</li>
 </ol>
 
 
 <h2>2. Vagrant for testing locally the server configuration</h2>
 
-<p>Well, it&#8217;ll be short. Head over to <a href="http://www.vagrantup.com">vagrant&#8217;s website</a> where its marvelous developper has done a very complete getting-started guide.
-Once installed (and don&#8217;t forget to install virtualbox too), I&#8217;m pretty much following it.
-I&#8217;ll chose the <code>precise64</code> box, an ubuntu 64 bits image, but you can of course choose another box found <a href="http://www.vagrantbox.es/">here</a></p>
+<p>Well, it&rsquo;ll be short. Head over to <a href="http://www.vagrantup.com">vagrant&rsquo;s website</a> where its marvelous developper has done a very complete getting-started guide.
+Once installed (and don&rsquo;t forget to install virtualbox too), I&rsquo;m pretty much following it.
+I&rsquo;ll chose the <code>precise64</code> box, an ubuntu 64 bits image, but you can of course choose another box found <a href="http://www.vagrantbox.es/">here</a></p>
 
-<p>I&#8217;ll start by creating a directory that will hold our deployment related configuration : vagrant and chef&#8217;s config.
-I have chosen to have this directory separate from my application&#8217;s directory.</p>
+<p>I&rsquo;ll start by creating a directory that will hold our deployment related configuration : vagrant and chef&rsquo;s config.
+I have chosen to have this directory separate from my application&rsquo;s directory.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -157,7 +157,7 @@ I have chosen to have this directory separate from my application&#8217;s direct
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Then let&#8217;s edit our <code>Vagrantfile</code> to change a few defaults to better suit us :</p>
+<p>Then let&rsquo;s edit our <code>Vagrantfile</code> to change a few defaults to better suit us :</p>
 
 <figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -172,16 +172,16 @@ I have chosen to have this directory separate from my application&#8217;s direct
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>We just start the box with <code>vagrant up</code> and check that we manage to connect to it using <code>vagrant ssh</code>. It&#8217;s working, great, we have a blank slate to work on !</p>
+<p>We just start the box with <code>vagrant up</code> and check that we manage to connect to it using <code>vagrant ssh</code>. It&rsquo;s working, great, we have a blank slate to work on !</p>
 
 <h2>3. Chef in the kitchen</h2>
 
 <p><a href="http://www.opscode.com/chef/">Chef</a> will be used to handle the configuration/bootstrapping of my servers.
-I&#8217;ve done my fair share of playing with ssh in the past, only to realize that administering a server for a side project using ssh is fun until
+I&rsquo;ve done my fair share of playing with ssh in the past, only to realize that administering a server for a side project using ssh is fun until
 you have to come back to it after a few months and remember where all the things are and where you should do you change.</p>
 
-<p>With chef, the configuration is stored on git, and if I need to change anything, there&#8217;s only one place to go.
-Soooo, let&#8217;s start.</p>
+<p>With chef, the configuration is stored on git, and if I need to change anything, there&rsquo;s only one place to go.
+Soooo, let&rsquo;s start.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -208,9 +208,9 @@ Soooo, let&#8217;s start.</p>
 It may be a bit more complicated than that, just look at <a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">this blog post</a> if you have issues installing the gems above.</p>
 
 <p>That should cover the installation of the main <code>chef</code> gem and of <code>knife-solo</code>. Chef can be configured to use with a chef server (useful to manage many machines)
-but for now I&#8217;ll be using <code>knife-solo</code> (also known as chef-solo) which should be good enough.</p>
+but for now I&rsquo;ll be using <code>knife-solo</code> (also known as chef-solo) which should be good enough.</p>
 
-<p>Now let&#8217;s initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.</p>
+<p>Now let&rsquo;s initiate a chef repository in my directory. This repository will hold all the configuration for the server(s) I am going to deploy to.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>knife solo init . <span class="c"># Creates the chef-repo here</span>
@@ -222,7 +222,7 @@ Opscode has gathered many cookbooks contributed by the community.
 The standard way of installing these cookbook is through <code>knife cookbook site install blah</code>, but I have included the <a href="http://berkshelf.com/">berkshelf</a> gem which will handle
 our <code>cookbooks</code> directory for us and get all the proper cookbooks and their dependencies. The list of cookbooks is managed in a <code>Berksfile</code>.</p>
 
-<p>For now, let&#8217;s start by installing some cookbooks. We&#8217;ll see later to configure them and our app.</p>
+<p>For now, let&rsquo;s start by installing some cookbooks. We&rsquo;ll see later to configure them and our app.</p>
 
 <figure class='code'><figcaption><span>Berksfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -243,19 +243,18 @@ our <code>cookbooks</code> directory for us and get all the proper cookbooks and
 
 <p>A few comments on these cookbooks ..</p>
 
-<p>apt
-: Used to make sure this package manager is installed on the ubuntu box that we&#8217;ll be using.</p>
+<dl>
+<dt>apt</dt>
+<dd>Used to make sure this package manager is installed on the ubuntu box that we&rsquo;ll be using.</dd>
+<dt>build-essential</dt>
+<dd>Make sure we can build stuff. This one will be included anyway since it&rsquo;s a dependency of for many other packages.</dd>
+<dt><a href="http://community.opscode.com/cookbooks/nginx">nginx</a></dt>
+<dd>Planning to use this lightweight web server to serve our rails app</dd>
+<dt><a href="http://community.opscode.com/cookbooks/database">database</a></dt>
+<dd>This cookbook is an alternative to the <a href="http://community.opscode.com/cookbooks/postgresql"><code>postgresql</code></a>. It can install mysql or postgresql and should allow us later to use a master/slave configuration.</dd>
+</dl>
 
-<p>build-essential
-: Make sure we can build stuff. This one will be included anyway since it&#8217;s a dependency of for many other packages.</p>
-
-<p><a href="http://community.opscode.com/cookbooks/nginx">nginx</a>
-: Planning to use this lightweight web server to serve our rails app</p>
-
-<p><a href="http://community.opscode.com/cookbooks/database">database</a>
-: This cookbook is an alternative to the <a href="http://community.opscode.com/cookbooks/postgresql"><code>postgresql</code></a>. It can install mysql or postgresql and should allow us later to use a master/slave configuration.</p>
-
-<p>Now let&#8217;s make sure these cookbooks are there and available :</p>
+<p>Now let&rsquo;s make sure these cookbooks are there and available :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>berks install
@@ -264,18 +263,18 @@ our <code>cookbooks</code> directory for us and get all the proper cookbooks and
 
 <h2>4. Make vagrant use chef</h2>
 
-<p>Now we&#8217;ll need to make vagrant use our chef cookbooks and recives, so that we&#8217;ll be able to test our chef configuration.
-For now we&#8217;ll just make sure it installs correctly a simple recipe (git, for example). We&#8217;ll cover the proper configuration
+<p>Now we&rsquo;ll need to make vagrant use our chef cookbooks and recives, so that we&rsquo;ll be able to test our chef configuration.
+For now we&rsquo;ll just make sure it installs correctly a simple recipe (git, for example). We&rsquo;ll cover the proper configuration
 of our servers in a later post.</p>
 
-<p>Since we are using berkshelf to manage our cookbooks, we&#8217;d better use the <code>vagrant-berkshelf</code> plugin :</p>
+<p>Since we are using berkshelf to manage our cookbooks, we&rsquo;d better use the <code>vagrant-berkshelf</code> plugin :</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>vagrant plugin install vagrant-berkshelf
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Now let&#8217;s add a few lines in our <code>Vagrantfile</code> :</p>
+<p>Now let&rsquo;s add a few lines in our <code>Vagrantfile</code> :</p>
 
 <figure class='code'><figcaption><span>Vagrantfile</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -319,15 +318,15 @@ then <code>vagrant provision</code> to make chef-solo install whatever is needed
 should help you verify that our chef provisionning worked.</p>
 
 <p>You can see in our <code>Vagrantfile</code> above that we just asked chef-solo to run the <code>git</code> recipe.
-Looking at <a href="http://community.opscode.com/cookbooks/git">git cookbook&#8217;s documentation</a>,
+Looking at <a href="http://community.opscode.com/cookbooks/git">git cookbook&rsquo;s documentation</a>,
 we can see that this will run the <code>git::default</code> recipe of this cookbook, which should just install git.</p>
 
-<p>Let&#8217;s remember that in the future running <code>vagrant provision</code> will rerun chef on our vm, so we&#8217;ll
+<p>Let&rsquo;s remember that in the future running <code>vagrant provision</code> will rerun chef on our vm, so we&rsquo;ll
 be able to quickly test our changes in config.</p>
 
 <h2>5. Server and app configuration with chef</h2>
 
-<p>I&#8217;ll cover that in my next post.</p>
+<p>I&rsquo;ll cover that in my next post.</p>
 
 <h3>References</h3>
 
@@ -354,7 +353,7 @@ be able to quickly test our changes in config.</p>
   
 
 
-<time datetime="2013-04-27T22:09:00+01:00" pubdate data-updated="true">Apr 27<span>th</span>, 2013</time>
+<time datetime="2013-04-27T22:09:00+01:00" pubdate data-updated="true"></time>
       
 
 <span class="categories">
@@ -367,8 +366,6 @@ be able to quickly test our changes in config.</p>
     </p>
     
       <div class="sharing">
-  
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/" data-via="at_wam" data-counturl="http://blog.atwam.com/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/" >Tweet</a>
   
   
   
@@ -401,6 +398,14 @@ be able to quickly test our changes in config.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/03/motorbike-prices-part-1/">Motorbike Prices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/12/adding-an-app-server-to-our-box/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 3</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/06/10/configuring-chef-solo-for-our-servers/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 2</a>
       </li>
     
@@ -410,14 +415,6 @@ be able to quickly test our changes in config.</p>
     
       <li class="post">
         <a href="/blog/2013/04/27/preparing-a-rails-app-for-deployment-using-chef-solo/">From pow to a deployed rails app using chef, capistrano and vagrant - Part 1</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/04/25/building-dep-selector-on-mac-os-x/">Building dep_selector on mac os x</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/05/11/multiple-persistent-stores-and-seed-data-with-core-data/">Multiple persistent stores and seed data with core data</a>
       </li>
     
   </ul>
@@ -455,23 +452,6 @@ be able to quickly test our changes in config.</p>
 </section>
 
 
-<section>
-  <h1>Latest Tweets</h1>
-  <ul id="tweets">
-    <li class="loading">Status updating...</li>
-  </ul>
-  <script type="text/javascript">
-    $.domReady(function(){
-      getTwitterFeed("at_wam", 4, false);
-    });
-  </script>
-  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
-  
-    <a href="http://twitter.com/at_wam" class="twitter-follow-button" data-show-count="false">Follow @at_wam</a>
-  
-</section>
-
-
 
 
 
@@ -482,7 +462,7 @@ be able to quickly test our changes in config.</p>
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Atwam -
+  Copyright &copy; 2016 - Atwam -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
