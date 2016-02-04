@@ -22,7 +22,7 @@ So, having lots of time on my hands at the moment, I started taking a quantitati
 # Step 1 : Get all the data
 The basis of my data is a request on a reputable motorbike classifieds website, looking for bikes which cost more than £500 (to avoid all the "wanted") posts, and with more than 200cc. I'm not claiming the data is perfect, far from it, but if you know a better source, let me know.
 
-As you can see below, I gathered prices and information for 15,505 bikes.
+As you can see below, I gathered prices and information for 15505 bikes.
 
 # Step 2 : Analysis
 
@@ -30,6 +30,7 @@ As you can see below, I gathered prices and information for 15,505 bikes.
 libs=c('data.table','knitr','ggplot2','stringr','pander','dplyr','lubridate')
 invisible(lapply(libs, require, character.only=TRUE))
 
+theme_set(theme_bw())
 data = fread('~/Dev/autoray/out.csv')
 
 data = within(data, {
@@ -367,5 +368,7 @@ I've only looked at a few things, and it seems obvious here that many results ar
 Next time, I'll look at the most frequent bike of the most frequent brand, and we'll see if these results still hold. Plus yeah, we'll have a first look at our pricing model and try to find some underpriced bikes.
 
 Stay tuned (and feel free to guess what model we'll be looking at in the comments, or let me know if you'd be interested in another specific analysis).
+
+__If you want to re-publish all or part of this data/graphs/article, get in touch. Just ask.__
 
 _I'd like to get some data on insurance as well, but it's a lot harder to gather. If you know a way, let me know..._
